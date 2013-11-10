@@ -55,7 +55,9 @@ public class SimplangTokenSource implements TokenSource {
         stream.consume();
 
         if ( t.getType()!=SimplangLexer.NL ) {
-            tokens.add(t);
+            if (t.getType()!=SimplangLexer.LEADING_WS) {
+                tokens.add(t);
+            }
             return;
         }
 
@@ -64,6 +66,10 @@ public class SimplangTokenSource implements TokenSource {
         t = stream.LT(1);
 
         if (t.getType() == Token.EOF) {
+             while (!identStack.empty()) {
+                identStack.pop();
+                tokens.add(tokenFactory.create(SimplangParser.DEDENT,"l=0"));
+            }
             tokens.add(t);
             return;
         }
@@ -71,25 +77,25 @@ public class SimplangTokenSource implements TokenSource {
         stream.consume();
 
         String w = "";
-        if ( t.getType() == SimplangLexer.LEADING_WS) {
+        if ( t.getType() == SimplangLexer.LEADING_WS ) {
             w = t.getText();
         }
 
         int l = w.length();
 
         if (l>lastIndent) {
-            tokens.add(tokenFactory.create(SimplangParser.INDENT,"l="+l));
             identStack.push(l);
+            tokens.add(tokenFactory.create(SimplangParser.INDENT,"I:l="+identStack.size()+" s="+l));
             lastIndent = l;
         } else if (l < lastIndent) {
-            while (!identStack.empty() && identStack.pop()>l) {
-                tokens.add(tokenFactory.create(SimplangParser.DEDENT,"l="+l));
+            while (!identStack.empty() && identStack.peek()>l) {
+                int cl = identStack.pop();
+                tokens.add(tokenFactory.create(SimplangParser.DEDENT,"D:l="+identStack.size()+" s="+cl));
             }
             lastIndent = l;
         }
 
-
-        if ( t.getType()!=SimplangLexer.LEADING_WS) {
+        if ( t.getType()!=SimplangLexer.LEADING_WS ) {
             tokens.add(t);
             return;
         }
