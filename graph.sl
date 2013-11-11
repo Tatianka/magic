@@ -1,5 +1,5 @@
 void dfs(int v, int[][] p, bool[] visited)
-    if (visited[v])
+    if visited[v]
         return
     visited[v] = true
     for i:=p[v]
@@ -11,7 +11,7 @@ void main()
 
     v := new int[][](n)
 
-    for (i:=[0:m])
+    for i:=[0:m]
         a := readInt()
         b := readInt()
 
@@ -22,7 +22,7 @@ void main()
 
     components := 0
 
-    for (i := [0:n])
+    for i := [0:n]
         if (!visited[i])
             components++
             dfs(i, p, visited)
