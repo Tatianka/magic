@@ -1,18 +1,18 @@
 import org.antlr.v4.runtime.*;
 import java.util.*;
 
-public class SimplangTokenSource implements TokenSource {
+public class IndentTokenSource implements TokenSource {
     Stack<Integer> identStack = new Stack<Integer>();
 
     CommonTokenStream stream;
 
     /** The queue of tokens */
-    List tokens = new ArrayList();
+    ArrayList<Token> tokens = new ArrayList<Token>();
     int lastIndent = 0;
 
     TokenFactory tokenFactory = new CommonTokenFactory();
 
-    public SimplangTokenSource(CommonTokenStream stream) {
+    public IndentTokenSource(CommonTokenStream stream) {
         this.stream = stream;
     }
 
@@ -37,7 +37,7 @@ public class SimplangTokenSource implements TokenSource {
         if ( tokens.size()>0 ) {
             Token t = (Token)tokens.get(0);
             tokens.remove(0);
-            System.out.println(t);
+            // System.out.println(t);
             return t;
         }
 

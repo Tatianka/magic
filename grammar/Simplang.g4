@@ -17,14 +17,16 @@ block
 
 statement
     : simple_statement NL
-    | block_statement;
+    | block_statement
+    ;
 
 simple_statement
     : assignment
     | var_def
     | expression
     | ret
-    | (BREAK | CONTINUE );
+    | stat=(BREAK | CONTINUE )
+    ;
 
 block_statement
     : if_statement
@@ -35,14 +37,24 @@ block_statement
 
 
 indexed_id: ID LBRACK val RBRACK;
-var : ID | indexed_id;
-val : var | INT | FLOAT | STRING | CHAR | BOOL | NULL | list | range;
+var : ID # VarID
+    | indexed_id # VarList
+    ;
+val : var # ValVar
+    | INT # ValInt
+    | FLOAT # ValFloat
+    | STRING # ValString
+    | CHAR # ValChar
+    | BOOL # ValBool
+    | NULL # ValNull
+    | list # ValList
+    | range # ValRange;
 
-simple_assignment: var ('=' | ':=') expression;
+simple_assignment: var op=('=' | ':=') expression;
 
 complex_assignment
-    : var (
-        | '+='
+    : var op = (
+          '+='
         | '-='
         | '*='
         | '/='
@@ -54,7 +66,6 @@ complex_assignment
         ) expression;
 
 assignment : simple_assignment | complex_assignment;
-
 
 if_statement: IF expression NL block (ELIF expression NL block)* (ELSE NL block)?;
 
@@ -92,24 +103,25 @@ increment:var '++';
 decrement:var '--';
 
 expression
-    : val
-    | increment
-    | decrement
-    | LPAR expression RPAR
-    | (func_call | construct)
-    | slicing
-    | indexation
-    | attribute_ref
-    | '^'<assoc=right> expression
-    | '~' expression
-    | '-' expression
-    | expression ('*' | '/' | '//' | '%') expression
-    | expression ('+' | '-') expression
-    | expression ('&' | '|') expression
-    | expression ('==' | '!=' | '<=' | '>=' | '>' | '<') expression
-    | NOT expression
-    | expression AND expression
-    | expression OR expression
+    : increment # Inc
+    | decrement # Dec
+    | LPAR expression RPAR # Paren
+    | (func_call | construct) # Func
+    | slicing # Slice
+    | indexation # Index
+    | attribute_ref # Attr
+    | '^'<assoc=right> expression # Exp
+    | '~' expression # BitNot
+    | '-' expression # UnaryMinus
+    | expression op=(MUL | DIV | IDIV | REM) expression # Mul
+    | expression op=(ADD | SUB) expression # Add
+    | expression '&' # BitAnd
+    | expression '|' # BitOr
+    | expression ('==' | '!=' | '<=' | '>=' | '>' | '<') expression # Compare
+    | NOT expression # BoolNot
+    | expression op=AND expression # BoolAnd
+    | expression op=OR expression # BoolOr
+    | val # Value
     ;
 
 WHILE : 'while';
@@ -132,6 +144,14 @@ AND : '&&' | 'and';
 OR : '||' | 'or';
 NOT : '!' | 'not';
 
+MUL: '*';
+DIV: '/';
+IDIV: '//';
+REM: '%';
+ADD: '+';
+SUB: '-';
+EXP: '^';
+
 BOOL : 'false' | 'true';
 INT : NUMBER;
 FLOAT : NUMBER '.' DIGIT*;
@@ -153,11 +173,8 @@ NL: '\r'? '\n' | '\r';
 
 LEADING_WS: {getCharPositionInLine()==0}? (' '|'\t')+ ;
 
-
 WS: (' ' | '\t')+ -> skip;
 
-
-
 fragment
-NUMBER : '0' | '-'? [1-9]DIGIT*;
+NUMBER : '0' | [1-9]DIGIT*;
 DIGIT : [0-9];
