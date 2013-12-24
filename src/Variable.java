@@ -31,5 +31,7 @@ public class Variable {
     public Variable(String name, String reg, Type t) {
         this.setRegister(reg);
         this.setType(t);
+        this.setName(name);
     }
+
 }

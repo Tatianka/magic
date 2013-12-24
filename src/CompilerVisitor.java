@@ -1,64 +1,111 @@
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import org.stringtemplate.v4.*;
 import java.util.LinkedList;
+import java.util.List;
+
 
 public class CompilerVisitor extends SimplangBaseVisitor<CodeFragment> {
-    LinkedList<Map<String, Variable>> mem = new LinkedList<Map<String, Variable>>();
+    LinkedList<Map<String, Variable>> variables = new LinkedList<Map<String, Variable>>();
+    LinkedList<Map<String, Function>> functions = new LinkedList<Map<String, Function>>();
+    // Map<String, Function> functions = new HashMap<String, Function>();
 
     private int labelIndex = 0;
     private int registerIndex = 0;
+    private int functionIndex = 0;
 
     private String generateNewLabel() {
-            return String.format("L%d", this.labelIndex++);
+        return String.format("L%d", this.labelIndex++);
     }
 
     private String generateNewRegister() {
-            return String.format("%%R%d", this.registerIndex++);
+        return String.format("%%R%d", this.registerIndex++);
     }
+
+    private String generateNewFunctionName() {
+        return String.format("@F%d", this.functionIndex++);
+    }
+
 
     public CompilerVisitor() {
-            super();
-            addTable();
+        super();
+        addTable();
     }
 
-    protected Map<String, Variable> findTable(String identifier) {
-            for (Map<String, Variable> table : mem) {
-                    if (table.containsKey(identifier)) {
-                            return table;
-                    }
+    private void addTable() {
+        variables.addFirst(new HashMap<String, Variable>());
+        functions.addFirst(new HashMap<String, Function>());
+    }
+
+    private void removeTable() {
+        variables.removeFirst();
+        functions.removeFirst();
+    }
+
+    protected Map<String, Variable> findVarTable(String identifier) {
+        for (Map<String, Variable> table : variables) {
+            if (table.containsKey(identifier)) {
+                return table;
             }
-            return null;
+        }
+        return null;
+    }
+
+    protected Map<String, Function> findFuncTable(String identifier) {
+        for (Map<String, Function> table : functions) {
+            if (table.containsKey(identifier)) {
+                return table;
+            }
+        }
+        return null;
     }
 
     protected Variable getVar(String identifier) {
-            Map<String, Variable> table = findTable(identifier);
-            if (table == null) return null;
-            return table.get(identifier);
+        Map<String, Variable> table = findVarTable(identifier);
+        if (table == null) return null;
+        return table.get(identifier);
     }
 
-    protected CodeFragment declVar(String identifier, String type) {
-            CodeFragment ret = new CodeFragment();
-            Type t = Type.fromString(type);
-            if (t == Type.NOTYPE) {
-                    System.err.println(String.format("Error: invalid type '%s' of '%s'.", type, identifier));
-                    return ret;
-            }
+    protected Function getFunc(String identifier) {
+        Map<String, Function> table = findFuncTable(identifier);
+        if (table == null) return null;
+        return table.get(identifier);
+    }
 
-            Map<String, Variable> table = mem.getFirst();
-            if (!table.containsKey(identifier)) {
-                    String mem_register = this.generateNewRegister();
-                    table.put(identifier, new Variable(identifier, mem_register, t));
-                    ST template = new ST("<mem_register> = alloca <type>\n");
-                    template.add("mem_register", mem_register);
-                    template.add("type", t.getCode());
-                    ret.addCode(template.render());
-                    ret.setRegister(mem_register);
-            } else {
-                    System.err.println(String.format("Error: cannot redeclare idenifier '%s'.", identifier));
-            }
+    protected boolean declFunc(String identifier, Function func) {
+        Map<String, Function> table = functions.getFirst();
+        if (!table.containsKey(identifier)) {
+            table.put(identifier, func);
+            return true;
+        } else {
+            System.err.println(String.format("Error: cannot redeclare function idenifier '%s'.", identifier));
+            return false;
+        }
+    }
+
+    protected CodeFragment declVar(String identifier, Type t) {
+        CodeFragment ret = new CodeFragment();
+        if (t == Type.NOTYPE) {
+            System.err.println(String.format("Error: invalid type '%s' of '%s'.", t, identifier));
             return ret;
+        }
+
+        Map<String, Variable> table = variables.getFirst();
+        if (!table.containsKey(identifier)) {
+            String mem_register = this.generateNewRegister();
+            table.put(identifier, new Variable(identifier, mem_register, t));
+            ST template = new ST("<mem_register> = alloca <type>\n");
+            template.add("mem_register", mem_register);
+            template.add("type", t.getCode());
+            ret.addCode(template.render());
+            ret.setRegister(mem_register);
+        } else {
+                System.err.println(String.format("Error: cannot redeclare idenifier '%s'.", identifier));
+        }
+        return ret;
     }
+
 
     private CodeFragment loadFromMemory(String mem_register, Type t) {
         CodeFragment code = new CodeFragment();
@@ -166,13 +213,48 @@ public class CompilerVisitor extends SimplangBaseVisitor<CodeFragment> {
 
     }
 
-    private void addTable() {
-            mem.addFirst(new HashMap<String, Variable>());
+    private String getParamsString(List<Variable> params) {
+        String s = "";
+        boolean begin = true;
+        for (Variable p : params) {
+            if (!begin) {
+                s += ", ";
+            } else {
+                begin = false;
+            }
+            s += p.getType().getCode() + " " + p.getRegister();
+        }
+        return s;
     }
 
-    private void removeTable() {
-            mem.removeFirst();
+    private CodeFragment generateFunctions() {
+        CodeFragment code = new CodeFragment();
+
+        for (Map<String, Function> table :functions) {
+            for(Map.Entry<String, Function> e : table.entrySet()) {
+                ST template = new ST(
+                    "define <rtype> <name>(<args>) {\n" +
+                    "start:\n" +
+                    "<body_code>" +
+                    "}\n"
+                );
+
+                Function f = e.getValue();
+
+                template.add("rtype", f.getReturnType().getCode());
+                template.add("name", f.getName());
+                template.add("body_code", f.getCode());
+                template.add("args", getParamsString(f.getParams()));
+
+                code.addCode(template.render());
+                code.setType(f.getCode().getType());
+                code.setRegister(f.getCode().getRegister());
+
+            }
+        }
+        return code;
     }
+
 
     @Override public CodeFragment visitInit(SimplangParser.InitContext ctx) {
         CodeFragment body = new CodeFragment();
@@ -183,6 +265,7 @@ public class CompilerVisitor extends SimplangBaseVisitor<CodeFragment> {
         }
 
         ST template = new ST(
+                "<functions>" +
                 "define i32 @main() {\n" +
                 "start:\n" +
                 "<body_code>" +
@@ -190,6 +273,7 @@ public class CompilerVisitor extends SimplangBaseVisitor<CodeFragment> {
                 "}\n"
         );
         template.add("body_code", body);
+        template.add("functions", this.generateFunctions());
 
         CodeFragment code = new CodeFragment();
         code.addCode(template.render());
@@ -248,7 +332,7 @@ public class CompilerVisitor extends SimplangBaseVisitor<CodeFragment> {
 
         SimplangParser.ExpressionContext exp = ctx.expression();
 
-        CodeFragment var_code = declVar(id, type);
+        CodeFragment var_code = declVar(id, Type.fromString(type));
         code.addCode(var_code);
         code.setRegister(var_code.getRegister());
         code.setType(var_code.getType());
@@ -263,6 +347,65 @@ public class CompilerVisitor extends SimplangBaseVisitor<CodeFragment> {
         }
 
         return code;
+    }
+
+    @Override public CodeFragment visitFunc_def(SimplangParser.Func_defContext ctx) {
+        CodeFragment code = new CodeFragment();
+
+        Type rtype = Type.fromString(visit(ctx.type()).toString());
+        String id = ctx.ID().getText();
+
+        addTable();
+        ArgListCodeFragment arglist = (ArgListCodeFragment) visit(ctx.arglist());
+        CodeFragment body = new CodeFragment();
+        body.appendCodeFragment(arglist);
+        body.appendCodeFragment(visit(ctx.block()));
+        removeTable();
+
+        code.setType(body.getType());
+        code.setRegister(body.getRegister());
+
+        String name = generateNewFunctionName();
+        Function f = new Function(id, name, rtype, arglist.getArgs(), body);
+        declFunc(id, f);
+
+        return code;
+    }
+
+    @Override public CodeFragment visitRet(SimplangParser.RetContext ctx) {
+        CodeFragment code;
+        try {
+            code = visit(ctx.expression());
+            code.addCode(String.format("ret %s %s\n", code.getType().getCode(), code.getRegister()));
+        } catch(NullPointerException e) {
+            code = new CodeFragment();
+            code.addCode("ret\n");
+        }
+        return code;
+    }
+
+    @Override public CodeFragment visitArglist(SimplangParser.ArglistContext ctx) {
+        ArgListCodeFragment code = new ArgListCodeFragment();
+        for (int i = 0; i< ctx.type().size(); i++) {
+            Type t = Type.fromString(visit(ctx.type(i)).toString());
+            String id = ctx.ID(i).getText();
+            String argRegister = this.generateNewRegister();
+
+            CodeFragment arg_code = declVar(id, t);
+            code.appendCodeFragment(arg_code);
+
+            CodeFragment val_code = new CodeFragment();
+            val_code.setRegister(argRegister);
+            val_code.setType(t);
+
+            Variable var = getVar(id);
+            CodeFragment assign = generateAssignCode(var, val_code);
+
+            code.appendCodeFragment(assign);
+            code.addArg(new Variable(id, argRegister, t));
+        }
+
+        return (CodeFragment)code;
     }
 
     public CodeFragment generateAssignCode(Variable var, CodeFragment value) {
@@ -329,6 +472,8 @@ public class CompilerVisitor extends SimplangBaseVisitor<CodeFragment> {
             Type type = left.getType();
 
             HashMap<Integer, Pair<String, String>> m = new HashMap<Integer, Pair<String, String>>();
+            HashSet<Integer> boolOperators = new HashSet<Integer>();
+
             m.put(SimplangParser.ADD, new Pair<String, String>("add", "fadd"));
             m.put(SimplangParser.SUB, new Pair<String, String>("sub", "fsub"));
             m.put(SimplangParser.MUL, new Pair<String, String>("mul", "fmul"));
@@ -336,7 +481,22 @@ public class CompilerVisitor extends SimplangBaseVisitor<CodeFragment> {
             m.put(SimplangParser.REM, new Pair<String, String>("srem" , "frem" ));
 
             m.put(SimplangParser.AND, new Pair<String, String>("and" , "and" ));
+            boolOperators.add(SimplangParser.AND);
             m.put(SimplangParser.OR, new Pair<String, String>("or" , "or" ));
+            boolOperators.add(SimplangParser.OR);
+            m.put(SimplangParser.EQ, new Pair<String, String>("icmp eq" , "fcmp eq" ));
+            boolOperators.add(SimplangParser.EQ);
+            m.put(SimplangParser.NE, new Pair<String, String>("icmp ne" , "fcmp ne" ));
+            boolOperators.add(SimplangParser.NE);
+            m.put(SimplangParser.LE, new Pair<String, String>("icmp sle" , "fcmp sle" ));
+            boolOperators.add(SimplangParser.LE);
+            m.put(SimplangParser.GE, new Pair<String, String>("icmp sge" , "fcmp sge" ));
+            boolOperators.add(SimplangParser.GE);
+            m.put(SimplangParser.GT, new Pair<String, String>("icmp sgt" , "fcmp sgt" ));
+            boolOperators.add(SimplangParser.GT);
+            m.put(SimplangParser.LT, new Pair<String, String>("icmp slt" , "fcmp slt" ));
+            boolOperators.add(SimplangParser.LT);
+
 
                 // case SimplangParser.EXP:
             //         instruction = "@iexp";
@@ -351,7 +511,7 @@ public class CompilerVisitor extends SimplangBaseVisitor<CodeFragment> {
                 code_stub = "";
             }
 
-            if (operator == SimplangParser.AND || operator == SimplangParser.OR) {
+            if (boolOperators.contains(operator)) {
                 instruction = m.get(operator).getFirst();
                 Variable v = new Variable(left.getInfo(), left.getRegister(), left.getType());
                 left.appendCodeFragment(variableToBool(v));
@@ -435,6 +595,14 @@ public class CompilerVisitor extends SimplangBaseVisitor<CodeFragment> {
         );
     }
 
+    @Override public CodeFragment visitCompare(SimplangParser.CompareContext ctx) {
+        return generateBinaryOperatorCodeFragment(
+            visit(ctx.expression(0)),
+            visit(ctx.expression(1)),
+            ctx.op.getType()
+        );
+    }
+
     @Override public CodeFragment visitBlock(SimplangParser.BlockContext ctx) {
         CodeFragment body = new CodeFragment();
         addTable();
@@ -509,6 +677,75 @@ public class CompilerVisitor extends SimplangBaseVisitor<CodeFragment> {
         code.setRegister(return_register);
 
         return code;
+    }
+
+    @Override public CodeFragment visitWhile_statement(SimplangParser.While_statementContext ctx) {
+        CodeFragment expression = visit(ctx.expression());
+        Variable v = new Variable(expression.getInfo(), expression.getRegister(), expression.getType());
+        expression.appendCodeFragment(variableToBool(v));
+        CodeFragment block = visit(ctx.block());
+
+        ST template = new ST(
+                "br label %<cmp_label>\n" +
+                "<cmp_label>:\n" +
+                "<condition_code>" +
+                "<cmp_register> = icmp ne <type> <condition_register>, 0\n" +
+                "br i1 <cmp_register>, label %<body_label>, label %<end_label>\n" +
+                "<body_label>:\n" +
+                "<body_code>" +
+                "br label %<cmp_label>\n" +
+                "<end_label>:\n" +
+                "<ret> = add <rtype> 0, 0\n"
+        );
+        template.add("cmp_label", generateNewLabel());
+        template.add("condition_code", expression);
+        template.add("type", expression.getType().getCode());
+        template.add("cmp_register", generateNewRegister());
+        template.add("condition_register", expression.getRegister());
+        template.add("body_label", generateNewLabel());
+        template.add("end_label", generateNewLabel());
+        template.add("body_code", block);
+        String end_register = generateNewRegister();
+        template.add("ret", end_register);
+        template.add("rtype", Type.INT.getCode());
+
+        CodeFragment ret = new CodeFragment();
+        ret.addCode(template.render());
+        ret.setRegister(end_register);
+        ret.setType(Type.INT);
+        return ret;
+    }
+
+    @Override public CodeFragment visitFunc_call(SimplangParser.Func_callContext ctx) {
+        CodeFragment code = new CodeFragment();
+        Function f = getFunc(ctx.ID().getText());
+        ArgListCodeFragment params = (ArgListCodeFragment)visit(ctx.param_list());
+        String register = generateNewRegister();
+
+        ST template = new ST(
+                "<args_code>" +
+                "<reg> = call <type> <name>(<args>)\n"
+        );
+        template.add("args_code", params);
+        template.add("type", f.getReturnType().getCode());
+        template.add("name", f.getName());
+        template.add("args", getParamsString(params.getArgs()));
+        template.add("reg", register);
+
+        code.addCode(template.render());
+        code.setRegister(register);
+        code.setType(f.getReturnType());
+        return code;
+    }
+
+    @Override public CodeFragment visitParam_list(SimplangParser.Param_listContext ctx) {
+        ArgListCodeFragment code = new ArgListCodeFragment();
+        for (SimplangParser.ExpressionContext e: ctx.expression()) {
+            CodeFragment expr_code = visit(e);
+            code.appendCodeFragment(expr_code);
+            code.addArg(new Variable(expr_code.getInfo(), expr_code.getRegister(), expr_code.getType()));
+        }
+        return (CodeFragment)code;
     }
 
 }

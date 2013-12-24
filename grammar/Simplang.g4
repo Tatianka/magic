@@ -82,7 +82,9 @@ func_def: type ID LPAR arglist RPAR NL block;
 
 arglist: (type ID (',' type ID)*)?;
 
-func_call: ((LPAR expression RPAR) | var) LPAR param_list RPAR;
+/*func_call: ((LPAR expression RPAR) | var) LPAR param_list RPAR;*/
+func_call: ID LPAR param_list RPAR;
+
 construct: NEW type LPAR param_list RPAR;
 indexation: (LPAR expression RPAR | var) LBRACK expression RBRACK;
 member: var | func_call;
@@ -110,14 +112,14 @@ expression
     | slicing # Slice
     | indexation # Index
     | attribute_ref # Attr
-    | '^'<assoc=right> expression # Exp
+    | EXP<assoc=right> expression # Exp
     | '~' expression # BitNot
     | '-' expression # UnaryMinus
     | expression op=(MUL | DIV | IDIV | REM) expression # Mul
     | expression op=(ADD | SUB) expression # Add
     | expression '&' # BitAnd
     | expression '|' # BitOr
-    | expression ('==' | '!=' | '<=' | '>=' | '>' | '<') expression # Compare
+    | expression op=(EQ | NE | LE | GE | GT | LT) expression # Compare
     | NOT expression # BoolNot
     | expression op=AND expression # BoolAnd
     | expression op=OR expression # BoolOr
@@ -151,6 +153,13 @@ REM: '%';
 ADD: '+';
 SUB: '-';
 EXP: '^';
+
+EQ: '==';
+NE: '!=';
+LE: '<=';
+GE: '>=';
+GT: '>';
+LT: '<';
 
 BOOL : 'false' | 'true';
 INT : NUMBER;
