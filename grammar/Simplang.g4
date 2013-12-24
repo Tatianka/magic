@@ -95,10 +95,11 @@ var_def: type ID ('=' expression)?;
 
 ret : RET expression?;
 
-type: ID
-    | type LBRACK RBRACK
-    | type LBRACK ':' RBRACK
-    | ('void' | 'int' | 'bool' | 'float' | 'char' | 'string');
+type: ID # typeId
+    | type LBRACK RBRACK # typeList
+    | type LBRACK ':' RBRACK # typeRange
+    | ('void' | 'int' | 'bool' | 'float' | 'char' | 'string') # typeBasic
+    ;
 
 increment:var '++';
 

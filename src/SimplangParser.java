@@ -2006,29 +2006,91 @@ public class SimplangParser extends Parser {
 
 	public static class TypeContext extends ParserRuleContext {
 		public int _p;
-		public TerminalNode RBRACK() { return getToken(SimplangParser.RBRACK, 0); }
-		public TerminalNode ID() { return getToken(SimplangParser.ID, 0); }
-		public TypeContext type() {
-			return getRuleContext(TypeContext.class,0);
-		}
-		public TerminalNode LBRACK() { return getToken(SimplangParser.LBRACK, 0); }
 		public TypeContext(ParserRuleContext parent, int invokingState) { super(parent, invokingState); }
 		public TypeContext(ParserRuleContext parent, int invokingState, int _p) {
 			super(parent, invokingState);
 			this._p = _p;
 		}
 		@Override public int getRuleIndex() { return RULE_type; }
+	 
+		public TypeContext() { }
+		public void copyFrom(TypeContext ctx) {
+			super.copyFrom(ctx);
+			this._p = ctx._p;
+		}
+	}
+	public static class TypeRangeContext extends TypeContext {
+		public TerminalNode RBRACK() { return getToken(SimplangParser.RBRACK, 0); }
+		public TypeContext type() {
+			return getRuleContext(TypeContext.class,0);
+		}
+		public TerminalNode LBRACK() { return getToken(SimplangParser.LBRACK, 0); }
+		public TypeRangeContext(TypeContext ctx) { copyFrom(ctx); }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof SimplangListener ) ((SimplangListener)listener).enterType(this);
+			if ( listener instanceof SimplangListener ) ((SimplangListener)listener).enterTypeRange(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof SimplangListener ) ((SimplangListener)listener).exitType(this);
+			if ( listener instanceof SimplangListener ) ((SimplangListener)listener).exitTypeRange(this);
 		}
 		@Override
 		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof SimplangVisitor ) return ((SimplangVisitor<? extends T>)visitor).visitType(this);
+			if ( visitor instanceof SimplangVisitor ) return ((SimplangVisitor<? extends T>)visitor).visitTypeRange(this);
+			else return visitor.visitChildren(this);
+		}
+	}
+	public static class TypeBasicContext extends TypeContext {
+		public TypeBasicContext(TypeContext ctx) { copyFrom(ctx); }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof SimplangListener ) ((SimplangListener)listener).enterTypeBasic(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof SimplangListener ) ((SimplangListener)listener).exitTypeBasic(this);
+		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof SimplangVisitor ) return ((SimplangVisitor<? extends T>)visitor).visitTypeBasic(this);
+			else return visitor.visitChildren(this);
+		}
+	}
+	public static class TypeListContext extends TypeContext {
+		public TerminalNode RBRACK() { return getToken(SimplangParser.RBRACK, 0); }
+		public TypeContext type() {
+			return getRuleContext(TypeContext.class,0);
+		}
+		public TerminalNode LBRACK() { return getToken(SimplangParser.LBRACK, 0); }
+		public TypeListContext(TypeContext ctx) { copyFrom(ctx); }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof SimplangListener ) ((SimplangListener)listener).enterTypeList(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof SimplangListener ) ((SimplangListener)listener).exitTypeList(this);
+		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof SimplangVisitor ) return ((SimplangVisitor<? extends T>)visitor).visitTypeList(this);
+			else return visitor.visitChildren(this);
+		}
+	}
+	public static class TypeIdContext extends TypeContext {
+		public TerminalNode ID() { return getToken(SimplangParser.ID, 0); }
+		public TypeIdContext(TypeContext ctx) { copyFrom(ctx); }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof SimplangListener ) ((SimplangListener)listener).enterTypeId(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof SimplangListener ) ((SimplangListener)listener).exitTypeId(this);
+		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof SimplangVisitor ) return ((SimplangVisitor<? extends T>)visitor).visitTypeId(this);
 			else return visitor.visitChildren(this);
 		}
 	}
@@ -2049,6 +2111,10 @@ public class SimplangParser extends Parser {
 			switch (_input.LA(1)) {
 			case ID:
 				{
+				_localctx = new TypeIdContext(_localctx);
+				_ctx = _localctx;
+				_prevctx = _localctx;
+
 				setState(266); match(ID);
 				}
 				break;
@@ -2059,6 +2125,9 @@ public class SimplangParser extends Parser {
 			case 15:
 			case 20:
 				{
+				_localctx = new TypeBasicContext(_localctx);
+				_ctx = _localctx;
+				_prevctx = _localctx;
 				setState(267);
 				_la = _input.LA(1);
 				if ( !((((_la) & ~0x3f) == 0 && ((1L << _la) & ((1L << 7) | (1L << 8) | (1L << 11) | (1L << 13) | (1L << 15) | (1L << 20))) != 0)) ) {
@@ -2083,7 +2152,7 @@ public class SimplangParser extends Parser {
 					switch ( getInterpreter().adaptivePredict(_input,23,_ctx) ) {
 					case 1:
 						{
-						_localctx = new TypeContext(_parentctx, _parentState, _p);
+						_localctx = new TypeListContext(new TypeContext(_parentctx, _parentState, _p));
 						pushNewRecursionContext(_localctx, _startState, RULE_type);
 						setState(270);
 						if (!(3 >= _localctx._p)) throw new FailedPredicateException(this, "3 >= $_p");
@@ -2094,7 +2163,7 @@ public class SimplangParser extends Parser {
 
 					case 2:
 						{
-						_localctx = new TypeContext(_parentctx, _parentState, _p);
+						_localctx = new TypeRangeContext(new TypeContext(_parentctx, _parentState, _p));
 						pushNewRecursionContext(_localctx, _startState, RULE_type);
 						setState(273);
 						if (!(2 >= _localctx._p)) throw new FailedPredicateException(this, "2 >= $_p");

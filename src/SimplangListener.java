@@ -74,17 +74,6 @@ public interface SimplangListener extends ParseTreeListener {
 	void exitSimple_assignment(@NotNull SimplangParser.Simple_assignmentContext ctx);
 
 	/**
-	 * Enter a parse tree produced by {@link SimplangParser#type}.
-	 * @param ctx the parse tree
-	 */
-	void enterType(@NotNull SimplangParser.TypeContext ctx);
-	/**
-	 * Exit a parse tree produced by {@link SimplangParser#type}.
-	 * @param ctx the parse tree
-	 */
-	void exitType(@NotNull SimplangParser.TypeContext ctx);
-
-	/**
 	 * Enter a parse tree produced by {@link SimplangParser#UnaryMinus}.
 	 * @param ctx the parse tree
 	 */
@@ -171,6 +160,17 @@ public interface SimplangListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitFunc(@NotNull SimplangParser.FuncContext ctx);
+
+	/**
+	 * Enter a parse tree produced by {@link SimplangParser#typeBasic}.
+	 * @param ctx the parse tree
+	 */
+	void enterTypeBasic(@NotNull SimplangParser.TypeBasicContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link SimplangParser#typeBasic}.
+	 * @param ctx the parse tree
+	 */
+	void exitTypeBasic(@NotNull SimplangParser.TypeBasicContext ctx);
 
 	/**
 	 * Enter a parse tree produced by {@link SimplangParser#for_statement}.
@@ -360,6 +360,28 @@ public interface SimplangListener extends ParseTreeListener {
 	void exitSimple_statement(@NotNull SimplangParser.Simple_statementContext ctx);
 
 	/**
+	 * Enter a parse tree produced by {@link SimplangParser#typeList}.
+	 * @param ctx the parse tree
+	 */
+	void enterTypeList(@NotNull SimplangParser.TypeListContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link SimplangParser#typeList}.
+	 * @param ctx the parse tree
+	 */
+	void exitTypeList(@NotNull SimplangParser.TypeListContext ctx);
+
+	/**
+	 * Enter a parse tree produced by {@link SimplangParser#typeId}.
+	 * @param ctx the parse tree
+	 */
+	void enterTypeId(@NotNull SimplangParser.TypeIdContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link SimplangParser#typeId}.
+	 * @param ctx the parse tree
+	 */
+	void exitTypeId(@NotNull SimplangParser.TypeIdContext ctx);
+
+	/**
 	 * Enter a parse tree produced by {@link SimplangParser#ret}.
 	 * @param ctx the parse tree
 	 */
@@ -380,6 +402,17 @@ public interface SimplangListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitValList(@NotNull SimplangParser.ValListContext ctx);
+
+	/**
+	 * Enter a parse tree produced by {@link SimplangParser#typeRange}.
+	 * @param ctx the parse tree
+	 */
+	void enterTypeRange(@NotNull SimplangParser.TypeRangeContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link SimplangParser#typeRange}.
+	 * @param ctx the parse tree
+	 */
+	void exitTypeRange(@NotNull SimplangParser.TypeRangeContext ctx);
 
 	/**
 	 * Enter a parse tree produced by {@link SimplangParser#range}.

@@ -53,13 +53,6 @@ public interface SimplangVisitor<T> extends ParseTreeVisitor<T> {
 	T visitSimple_assignment(@NotNull SimplangParser.Simple_assignmentContext ctx);
 
 	/**
-	 * Visit a parse tree produced by {@link SimplangParser#type}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitType(@NotNull SimplangParser.TypeContext ctx);
-
-	/**
 	 * Visit a parse tree produced by {@link SimplangParser#UnaryMinus}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
@@ -114,6 +107,13 @@ public interface SimplangVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitFunc(@NotNull SimplangParser.FuncContext ctx);
+
+	/**
+	 * Visit a parse tree produced by {@link SimplangParser#typeBasic}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitTypeBasic(@NotNull SimplangParser.TypeBasicContext ctx);
 
 	/**
 	 * Visit a parse tree produced by {@link SimplangParser#for_statement}.
@@ -235,6 +235,20 @@ public interface SimplangVisitor<T> extends ParseTreeVisitor<T> {
 	T visitSimple_statement(@NotNull SimplangParser.Simple_statementContext ctx);
 
 	/**
+	 * Visit a parse tree produced by {@link SimplangParser#typeList}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitTypeList(@NotNull SimplangParser.TypeListContext ctx);
+
+	/**
+	 * Visit a parse tree produced by {@link SimplangParser#typeId}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitTypeId(@NotNull SimplangParser.TypeIdContext ctx);
+
+	/**
 	 * Visit a parse tree produced by {@link SimplangParser#ret}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
@@ -247,6 +261,13 @@ public interface SimplangVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitValList(@NotNull SimplangParser.ValListContext ctx);
+
+	/**
+	 * Visit a parse tree produced by {@link SimplangParser#typeRange}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitTypeRange(@NotNull SimplangParser.TypeRangeContext ctx);
 
 	/**
 	 * Visit a parse tree produced by {@link SimplangParser#range}.

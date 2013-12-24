@@ -20,6 +20,8 @@ public class Function {
     }
 
     public void setCode(CodeFragment code) {
+        if (code == null)
+            code = new CodeFragment();
         this.code = code;
     }
 
@@ -46,6 +48,11 @@ public class Function {
     public void setName(String name) {
         this.name = name;
     }
+
+    public Function(String id, String name, Type returnType, List<Variable> params) {
+        this(id, name, returnType, params, null);
+    }
+
 
     public Function(String id, String name, Type returnType, List<Variable> params, CodeFragment code) {
         this.setId(id);

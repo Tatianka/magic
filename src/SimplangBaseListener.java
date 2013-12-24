@@ -94,19 +94,6 @@ public class SimplangBaseListener implements SimplangListener {
 	 * <p/>
 	 * The default implementation does nothing.
 	 */
-	@Override public void enterType(@NotNull SimplangParser.TypeContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 * <p/>
-	 * The default implementation does nothing.
-	 */
-	@Override public void exitType(@NotNull SimplangParser.TypeContext ctx) { }
-
-	/**
-	 * {@inheritDoc}
-	 * <p/>
-	 * The default implementation does nothing.
-	 */
 	@Override public void enterUnaryMinus(@NotNull SimplangParser.UnaryMinusContext ctx) { }
 	/**
 	 * {@inheritDoc}
@@ -205,6 +192,19 @@ public class SimplangBaseListener implements SimplangListener {
 	 * The default implementation does nothing.
 	 */
 	@Override public void exitFunc(@NotNull SimplangParser.FuncContext ctx) { }
+
+	/**
+	 * {@inheritDoc}
+	 * <p/>
+	 * The default implementation does nothing.
+	 */
+	@Override public void enterTypeBasic(@NotNull SimplangParser.TypeBasicContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 * <p/>
+	 * The default implementation does nothing.
+	 */
+	@Override public void exitTypeBasic(@NotNull SimplangParser.TypeBasicContext ctx) { }
 
 	/**
 	 * {@inheritDoc}
@@ -432,6 +432,32 @@ public class SimplangBaseListener implements SimplangListener {
 	 * <p/>
 	 * The default implementation does nothing.
 	 */
+	@Override public void enterTypeList(@NotNull SimplangParser.TypeListContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 * <p/>
+	 * The default implementation does nothing.
+	 */
+	@Override public void exitTypeList(@NotNull SimplangParser.TypeListContext ctx) { }
+
+	/**
+	 * {@inheritDoc}
+	 * <p/>
+	 * The default implementation does nothing.
+	 */
+	@Override public void enterTypeId(@NotNull SimplangParser.TypeIdContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 * <p/>
+	 * The default implementation does nothing.
+	 */
+	@Override public void exitTypeId(@NotNull SimplangParser.TypeIdContext ctx) { }
+
+	/**
+	 * {@inheritDoc}
+	 * <p/>
+	 * The default implementation does nothing.
+	 */
 	@Override public void enterRet(@NotNull SimplangParser.RetContext ctx) { }
 	/**
 	 * {@inheritDoc}
@@ -452,6 +478,19 @@ public class SimplangBaseListener implements SimplangListener {
 	 * The default implementation does nothing.
 	 */
 	@Override public void exitValList(@NotNull SimplangParser.ValListContext ctx) { }
+
+	/**
+	 * {@inheritDoc}
+	 * <p/>
+	 * The default implementation does nothing.
+	 */
+	@Override public void enterTypeRange(@NotNull SimplangParser.TypeRangeContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 * <p/>
+	 * The default implementation does nothing.
+	 */
+	@Override public void exitTypeRange(@NotNull SimplangParser.TypeRangeContext ctx) { }
 
 	/**
 	 * {@inheritDoc}

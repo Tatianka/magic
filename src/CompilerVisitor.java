@@ -4,12 +4,13 @@ import java.util.Map;
 import org.stringtemplate.v4.*;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.ArrayList;
 
 
 public class CompilerVisitor extends SimplangBaseVisitor<CodeFragment> {
     LinkedList<Map<String, Variable>> variables = new LinkedList<Map<String, Variable>>();
     LinkedList<Map<String, Function>> functions = new LinkedList<Map<String, Function>>();
-    // Map<String, Function> functions = new HashMap<String, Function>();
+    HashSet<Function> libFunctions = new HashSet<Function>();
 
     private int labelIndex = 0;
     private int registerIndex = 0;
@@ -31,6 +32,19 @@ public class CompilerVisitor extends SimplangBaseVisitor<CodeFragment> {
     public CompilerVisitor() {
         super();
         addTable();
+        addLibFunctions();
+    }
+
+    private void addLibFunctions(){
+        List<Variable> p = new ArrayList<Variable>();
+
+        p.clear();
+        p.add(new Variable("a", "", BasicType.INT));
+        Function f;
+        f = new Function("printInt", "@printInt", BasicType.INT, p);
+        libFunctions.add(f);
+        declFunc("printInt", f);
+
     }
 
     private void addTable() {
@@ -86,7 +100,7 @@ public class CompilerVisitor extends SimplangBaseVisitor<CodeFragment> {
 
     protected CodeFragment declVar(String identifier, Type t) {
         CodeFragment ret = new CodeFragment();
-        if (t == Type.NOTYPE) {
+        if (t == BasicType.NOTYPE) {
             System.err.println(String.format("Error: invalid type '%s' of '%s'.", t, identifier));
             return ret;
         }
@@ -117,7 +131,7 @@ public class CompilerVisitor extends SimplangBaseVisitor<CodeFragment> {
     }
 
     private boolean compatibleTypes(Type t1, Type t2) {
-        if ((t1 == Type.FLOAT || t1 == Type.INT || t1 == Type.BOOL) && (t2 == Type.FLOAT || t2 == Type.INT || t2 == Type.BOOL)) {
+        if ((t1 == BasicType.FLOAT || t1 == BasicType.INT || t1 == BasicType.BOOL) && (t2 == BasicType.FLOAT || t2 == BasicType.INT || t2 == BasicType.BOOL)) {
             return true;
         }
 
@@ -126,15 +140,15 @@ public class CompilerVisitor extends SimplangBaseVisitor<CodeFragment> {
 
     private Type getCommonType(Type t1, Type t2) {
         if (!compatibleTypes(t1, t2)) {
-            return Type.NOTYPE;
+            return BasicType.NOTYPE;
         }
 
-        if (t1 == Type.FLOAT || t2 == Type.FLOAT) {
-            return Type.FLOAT;
+        if (t1 == BasicType.FLOAT || t2 == BasicType.FLOAT) {
+            return BasicType.FLOAT;
         }
 
-        if (t1 == Type.INT || t2 == Type.INT) {
-            return Type.INT;
+        if (t1 == BasicType.INT || t2 == BasicType.INT) {
+            return BasicType.INT;
         }
 
         return t1;
@@ -151,7 +165,7 @@ public class CompilerVisitor extends SimplangBaseVisitor<CodeFragment> {
         String instruction = "";
         String register = this.generateNewRegister();
 
-        if (v.getType() == Type.BOOL && t == Type.INT) {
+        if (v.getType() == BasicType.BOOL && t == BasicType.INT) {
             instruction = "zext";
         } else {
             instruction = "sitofp";
@@ -177,8 +191,8 @@ public class CompilerVisitor extends SimplangBaseVisitor<CodeFragment> {
     private CodeFragment variableToBool(Variable v) {
         CodeFragment code = new CodeFragment();
 
-        if (v.getType() == Type.BOOL) {
-            code.setType(Type.BOOL);
+        if (v.getType() == BasicType.BOOL) {
+            code.setType(BasicType.BOOL);
             code.setRegister(v.getRegister());
             return code;
         }
@@ -192,11 +206,11 @@ public class CompilerVisitor extends SimplangBaseVisitor<CodeFragment> {
         Type t = v.getType();
         String instruction = "no_istruction";
 
-        if (t == Type.INT) {
+        if (t == BasicType.INT) {
             instruction = "icmp";
         }
 
-        if (t == Type.FLOAT) {
+        if (t == BasicType.FLOAT) {
             instruction = "fcmp";
         }
 
@@ -206,7 +220,7 @@ public class CompilerVisitor extends SimplangBaseVisitor<CodeFragment> {
         temp.add("instruction", instruction);
 
         code.addCode(temp.render());
-        code.setType(Type.BOOL);
+        code.setType(BasicType.BOOL);
         code.setRegister(register);
 
         return code;
@@ -232,6 +246,9 @@ public class CompilerVisitor extends SimplangBaseVisitor<CodeFragment> {
 
         for (Map<String, Function> table :functions) {
             for(Map.Entry<String, Function> e : table.entrySet()) {
+                Function f = e.getValue();
+                if (libFunctions.contains(f)) continue;
+
                 ST template = new ST(
                     "define <rtype> <name>(<args>) {\n" +
                     "start:\n" +
@@ -239,7 +256,6 @@ public class CompilerVisitor extends SimplangBaseVisitor<CodeFragment> {
                     "}\n"
                 );
 
-                Function f = e.getValue();
 
                 template.add("rtype", f.getReturnType().getCode());
                 template.add("name", f.getName());
@@ -255,8 +271,34 @@ public class CompilerVisitor extends SimplangBaseVisitor<CodeFragment> {
         return code;
     }
 
+    private CodeFragment generateLibFunctions() {
+        CodeFragment code = new CodeFragment();
+
+        for(Function f : libFunctions) {
+            ST template = new ST(
+                "declare <rtype> <name>(<args>)\n"
+            );
+
+            template.add("rtype", f.getReturnType().getCode());
+            template.add("name", f.getName());
+            template.add("args", getParamsString(f.getParams()));
+
+            code.addCode(template.render());
+            code.setType(f.getCode().getType());
+            code.setRegister(f.getCode().getRegister());
+
+        }
+        return code;
+    }
+
+
 
     @Override public CodeFragment visitInit(SimplangParser.InitContext ctx) {
+        String base_functions =
+            "declare {i64, i64, i64, i64*} @create_list (i64, i64)\n";
+
+        CodeFragment lib_functions = generateLibFunctions();
+
         CodeFragment body = new CodeFragment();
 
         for(SimplangParser.StatementContext s: ctx.statement()) {
@@ -265,6 +307,8 @@ public class CompilerVisitor extends SimplangBaseVisitor<CodeFragment> {
         }
 
         ST template = new ST(
+                "<base_functions>" +
+                "<lib_functions>" +
                 "<functions>" +
                 "define i32 @main() {\n" +
                 "start:\n" +
@@ -272,8 +316,11 @@ public class CompilerVisitor extends SimplangBaseVisitor<CodeFragment> {
                 "ret i32 0\n" +
                 "}\n"
         );
+
         template.add("body_code", body);
         template.add("functions", this.generateFunctions());
+        template.add("lib_functions", lib_functions);
+        template.add("base_functions", base_functions);
 
         CodeFragment code = new CodeFragment();
         code.addCode(template.render());
@@ -293,7 +340,7 @@ public class CompilerVisitor extends SimplangBaseVisitor<CodeFragment> {
         String value = ctx.INT().getText();
         CodeFragment code = new CodeFragment();
         String register = generateNewRegister();
-        code.setType(Type.INT);
+        code.setType(BasicType.INT);
         code.setRegister(register);
         code.addCode(String.format("%s = add %s 0, %s\n", register, code.getType().getCode(), value));
         return code;
@@ -303,7 +350,7 @@ public class CompilerVisitor extends SimplangBaseVisitor<CodeFragment> {
         String value = ctx.FLOAT().getText();
         CodeFragment code = new CodeFragment();
         String register = generateNewRegister();
-        code.setType(Type.FLOAT);
+        code.setType(BasicType.FLOAT);
         code.setRegister(register);
         code.addCode(String.format("%s = add %s 0, %s\n", register, code.getType().getCode(), value));
         return code;
@@ -327,12 +374,12 @@ public class CompilerVisitor extends SimplangBaseVisitor<CodeFragment> {
     @Override public CodeFragment visitVar_def(SimplangParser.Var_defContext ctx) {
         CodeFragment code = new CodeFragment();
 
-        String type = visit(ctx.type()).toString();
+        Type type = visit(ctx.type()).getType();
         String id = ctx.ID().getText();
 
         SimplangParser.ExpressionContext exp = ctx.expression();
 
-        CodeFragment var_code = declVar(id, Type.fromString(type));
+        CodeFragment var_code = declVar(id, type);
         code.addCode(var_code);
         code.setRegister(var_code.getRegister());
         code.setType(var_code.getType());
@@ -352,7 +399,7 @@ public class CompilerVisitor extends SimplangBaseVisitor<CodeFragment> {
     @Override public CodeFragment visitFunc_def(SimplangParser.Func_defContext ctx) {
         CodeFragment code = new CodeFragment();
 
-        Type rtype = Type.fromString(visit(ctx.type()).toString());
+        Type rtype = visit(ctx.type()).getType();
         String id = ctx.ID().getText();
 
         addTable();
@@ -387,7 +434,7 @@ public class CompilerVisitor extends SimplangBaseVisitor<CodeFragment> {
     @Override public CodeFragment visitArglist(SimplangParser.ArglistContext ctx) {
         ArgListCodeFragment code = new ArgListCodeFragment();
         for (int i = 0; i< ctx.type().size(); i++) {
-            Type t = Type.fromString(visit(ctx.type(i)).toString());
+            Type t = visit(ctx.type(i)).getType();
             String id = ctx.ID(i).getText();
             String argRegister = this.generateNewRegister();
 
@@ -437,9 +484,16 @@ public class CompilerVisitor extends SimplangBaseVisitor<CodeFragment> {
         return ret;
     }
 
-    @Override public CodeFragment visitType(SimplangParser.TypeContext ctx) {
+    @Override public CodeFragment visitTypeBasic(SimplangParser.TypeBasicContext ctx) {
         CodeFragment code = new CodeFragment();
-        code.addCode(ctx.getText());
+        code.setType(BasicType.fromString(ctx.getText()));
+        return code;
+    }
+
+    @Override public CodeFragment visitTypeList(SimplangParser.TypeListContext ctx) {
+        CodeFragment code = new CodeFragment();
+        Type subtype = visit(ctx.type()).getType();
+        code.setType(new ListType(subtype));
         return code;
     }
 
@@ -468,99 +522,98 @@ public class CompilerVisitor extends SimplangBaseVisitor<CodeFragment> {
     }
 
     public CodeFragment generateBinaryOperatorCodeFragment(CodeFragment left, CodeFragment right, Integer operator) {
-            String code_stub = "<ret> = <instruction> <type> <left_val>, <right_val>\n";
-            Type type = left.getType();
+        String code_stub = "<ret> = <instruction> <type> <left_val>, <right_val>\n";
+        Type type = left.getType();
 
-            HashMap<Integer, Pair<String, String>> m = new HashMap<Integer, Pair<String, String>>();
-            HashSet<Integer> boolOperators = new HashSet<Integer>();
+        HashMap<Integer, Pair<String, String>> m = new HashMap<Integer, Pair<String, String>>();
+        HashSet<Integer> boolOperators = new HashSet<Integer>();
 
-            m.put(SimplangParser.ADD, new Pair<String, String>("add", "fadd"));
-            m.put(SimplangParser.SUB, new Pair<String, String>("sub", "fsub"));
-            m.put(SimplangParser.MUL, new Pair<String, String>("mul", "fmul"));
-            m.put(SimplangParser.DIV, new Pair<String, String>("sdiv", "fdiv"));
-            m.put(SimplangParser.REM, new Pair<String, String>("srem" , "frem" ));
+        m.put(SimplangParser.ADD, new Pair<String, String>("add", "fadd"));
+        m.put(SimplangParser.SUB, new Pair<String, String>("sub", "fsub"));
+        m.put(SimplangParser.MUL, new Pair<String, String>("mul", "fmul"));
+        m.put(SimplangParser.DIV, new Pair<String, String>("sdiv", "fdiv"));
+        m.put(SimplangParser.REM, new Pair<String, String>("srem" , "frem" ));
 
-            m.put(SimplangParser.AND, new Pair<String, String>("and" , "and" ));
-            boolOperators.add(SimplangParser.AND);
-            m.put(SimplangParser.OR, new Pair<String, String>("or" , "or" ));
-            boolOperators.add(SimplangParser.OR);
-            m.put(SimplangParser.EQ, new Pair<String, String>("icmp eq" , "fcmp eq" ));
-            boolOperators.add(SimplangParser.EQ);
-            m.put(SimplangParser.NE, new Pair<String, String>("icmp ne" , "fcmp ne" ));
-            boolOperators.add(SimplangParser.NE);
-            m.put(SimplangParser.LE, new Pair<String, String>("icmp sle" , "fcmp sle" ));
-            boolOperators.add(SimplangParser.LE);
-            m.put(SimplangParser.GE, new Pair<String, String>("icmp sge" , "fcmp sge" ));
-            boolOperators.add(SimplangParser.GE);
-            m.put(SimplangParser.GT, new Pair<String, String>("icmp sgt" , "fcmp sgt" ));
-            boolOperators.add(SimplangParser.GT);
-            m.put(SimplangParser.LT, new Pair<String, String>("icmp slt" , "fcmp slt" ));
-            boolOperators.add(SimplangParser.LT);
-
-
-                // case SimplangParser.EXP:
-            //         instruction = "@iexp";
-            //         code_stub = "<ret> = call i32 <instruction>(i32 <left_val>, i32 <right_val>)\n";
-            //         break;
+        m.put(SimplangParser.AND, new Pair<String, String>("and" , "and" ));
+        boolOperators.add(SimplangParser.AND);
+        m.put(SimplangParser.OR, new Pair<String, String>("or" , "or" ));
+        boolOperators.add(SimplangParser.OR);
+        m.put(SimplangParser.EQ, new Pair<String, String>("icmp eq" , "fcmp eq" ));
+        boolOperators.add(SimplangParser.EQ);
+        m.put(SimplangParser.NE, new Pair<String, String>("icmp ne" , "fcmp ne" ));
+        boolOperators.add(SimplangParser.NE);
+        m.put(SimplangParser.LE, new Pair<String, String>("icmp sle" , "fcmp sle" ));
+        boolOperators.add(SimplangParser.LE);
+        m.put(SimplangParser.GE, new Pair<String, String>("icmp sge" , "fcmp sge" ));
+        boolOperators.add(SimplangParser.GE);
+        m.put(SimplangParser.GT, new Pair<String, String>("icmp sgt" , "fcmp sgt" ));
+        boolOperators.add(SimplangParser.GT);
+        m.put(SimplangParser.LT, new Pair<String, String>("icmp slt" , "fcmp slt" ));
+        boolOperators.add(SimplangParser.LT);
 
 
-            String instruction = "";
+            // case SimplangParser.EXP:
+        //         instruction = "@iexp";
+        //         code_stub = "<ret> = call i32 <instruction>(i32 <left_val>, i32 <right_val>)\n";
+        //         break;
 
-            if (left.getType() != right.getType()) {
-                System.err.println(String.format("Incompatible types: '%s', '%s'", left.getType(), right.getType()));
-                code_stub = "";
-            }
 
-            if (boolOperators.contains(operator)) {
-                instruction = m.get(operator).getFirst();
+        String instruction = "";
+
+        if (left.getType() != right.getType()) {
+            System.err.println(String.format("Incompatible types: '%s', '%s'", left.getType(), right.getType()));
+            code_stub = "";
+        }
+
+        if (boolOperators.contains(operator)) {
+            instruction = m.get(operator).getFirst();
+            Variable v = new Variable(left.getInfo(), left.getRegister(), left.getType());
+            left.appendCodeFragment(variableToBool(v));
+
+            Variable v2 = new Variable(right.getInfo(), right.getRegister(), right.getType());
+            right.appendCodeFragment(variableToBool(v));
+
+            type = BasicType.BOOL;
+
+        } else {
+            if (type == BasicType.BOOL) {
                 Variable v = new Variable(left.getInfo(), left.getRegister(), left.getType());
-                left.appendCodeFragment(variableToBool(v));
+                left.appendCodeFragment(variableTypeConvert(v, BasicType.INT));
 
                 Variable v2 = new Variable(right.getInfo(), right.getRegister(), right.getType());
-                right.appendCodeFragment(variableToBool(v));
+                right.appendCodeFragment(variableTypeConvert(v, BasicType.INT));
 
-                type = Type.BOOL;
-
-            } else {
-                if (type == Type.BOOL) {
-                    Variable v = new Variable(left.getInfo(), left.getRegister(), left.getType());
-                    left.appendCodeFragment(variableTypeConvert(v, Type.INT));
-
-                    Variable v2 = new Variable(right.getInfo(), right.getRegister(), right.getType());
-                    right.appendCodeFragment(variableTypeConvert(v, Type.INT));
-
-                    type = Type.INT;
-                }
-
-                if (type == Type.INT) {
-                    instruction = m.get(operator).getFirst();
-                }
-
-                if (type == Type.FLOAT) {
-                    instruction = m.get(operator).getSecond();
-                }
+                type = BasicType.INT;
             }
 
-            ST template = new ST(
-                "<left_code>" +
-                "<right_code>" +
-                code_stub
-            );
-            template.add("right_code", right);
-            template.add("left_code", left);
-            template.add("instruction", instruction);
-            template.add("type", type.getCode());
-            template.add("left_val", left.getRegister());
-            template.add("right_val", right.getRegister());
-            String ret_register = this.generateNewRegister();
-            template.add("ret", ret_register);
+            if (type == BasicType.INT) {
+                instruction = m.get(operator).getFirst();
+            }
 
-            CodeFragment ret = new CodeFragment();
-            ret.setRegister(ret_register);
-            ret.setType(type);
-            ret.addCode(template.render());
-            return ret;
+            if (type == BasicType.FLOAT) {
+                instruction = m.get(operator).getSecond();
+            }
+        }
 
+        ST template = new ST(
+            "<left_code>" +
+            "<right_code>" +
+            code_stub
+        );
+        template.add("right_code", right);
+        template.add("left_code", left);
+        template.add("instruction", instruction);
+        template.add("type", type.getCode());
+        template.add("left_val", left.getRegister());
+        template.add("right_val", right.getRegister());
+        String ret_register = this.generateNewRegister();
+        template.add("ret", ret_register);
+
+        CodeFragment ret = new CodeFragment();
+        ret.setRegister(ret_register);
+        ret.setType(type);
+        ret.addCode(template.render());
+        return ret;
     }
 
     @Override public CodeFragment visitMul(SimplangParser.MulContext ctx) {
@@ -668,12 +721,12 @@ public class CompilerVisitor extends SimplangBaseVisitor<CodeFragment> {
         );
 
         template.add("block_end", endBlockLabel);
-        template.add("type", Type.INT.getCode());
+        template.add("type", BasicType.INT.getCode());
         String return_register = generateNewRegister();
         template.add("ret", return_register);
 
         code.addCode(template.render());
-        code.setType(Type.INT);
+        code.setType(BasicType.INT);
         code.setRegister(return_register);
 
         return code;
@@ -707,12 +760,12 @@ public class CompilerVisitor extends SimplangBaseVisitor<CodeFragment> {
         template.add("body_code", block);
         String end_register = generateNewRegister();
         template.add("ret", end_register);
-        template.add("rtype", Type.INT.getCode());
+        template.add("rtype", BasicType.INT.getCode());
 
         CodeFragment ret = new CodeFragment();
         ret.addCode(template.render());
         ret.setRegister(end_register);
-        ret.setType(Type.INT);
+        ret.setType(BasicType.INT);
         return ret;
     }
 
