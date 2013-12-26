@@ -36,9 +36,8 @@ block_statement
     | block;
 
 
-indexed_id: ID LBRACK val RBRACK;
 var : ID # VarID
-    | indexed_id # VarList
+    | var LBRACK expression RBRACK #VarList
     ;
 val : var # ValVar
     | INT # ValInt
@@ -86,7 +85,6 @@ arglist: (type ID (',' type ID)*)?;
 func_call: ID LPAR param_list RPAR;
 
 construct: NEW type LPAR param_list RPAR;
-indexation: (LPAR expression RPAR | var) LBRACK expression RBRACK;
 member: var | func_call;
 attribute_ref: ((LPAR expression RPAR) | var) '.' member;
 slicing: ((LPAR expression RPAR) | var) LBRACK expression':'expression(':'expression)? RBRACK;
@@ -111,7 +109,7 @@ expression
     | LPAR expression RPAR # Paren
     | (func_call | construct) # Func
     | slicing # Slice
-    | indexation # Index
+    | expression LBRACK expression RBRACK # Index
     | attribute_ref # Attr
     | EXP<assoc=right> expression # Exp
     | '~' expression # BitNot

@@ -121,7 +121,7 @@ public class SimplangBaseVisitor<T> extends AbstractParseTreeVisitor<T> implemen
 	 * The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.
 	 */
-	@Override public T visitFunc(@NotNull SimplangParser.FuncContext ctx) { return visitChildren(ctx); }
+	@Override public T visitTypeBasic(@NotNull SimplangParser.TypeBasicContext ctx) { return visitChildren(ctx); }
 
 	/**
 	 * {@inheritDoc}
@@ -129,7 +129,7 @@ public class SimplangBaseVisitor<T> extends AbstractParseTreeVisitor<T> implemen
 	 * The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.
 	 */
-	@Override public T visitTypeBasic(@NotNull SimplangParser.TypeBasicContext ctx) { return visitChildren(ctx); }
+	@Override public T visitFunc(@NotNull SimplangParser.FuncContext ctx) { return visitChildren(ctx); }
 
 	/**
 	 * {@inheritDoc}
@@ -154,14 +154,6 @@ public class SimplangBaseVisitor<T> extends AbstractParseTreeVisitor<T> implemen
 	 * {@link #visitChildren} on {@code ctx}.
 	 */
 	@Override public T visitDecrement(@NotNull SimplangParser.DecrementContext ctx) { return visitChildren(ctx); }
-
-	/**
-	 * {@inheritDoc}
-	 * <p/>
-	 * The default implementation returns the result of calling
-	 * {@link #visitChildren} on {@code ctx}.
-	 */
-	@Override public T visitIndexation(@NotNull SimplangParser.IndexationContext ctx) { return visitChildren(ctx); }
 
 	/**
 	 * {@inheritDoc}
@@ -314,14 +306,6 @@ public class SimplangBaseVisitor<T> extends AbstractParseTreeVisitor<T> implemen
 	 * {@link #visitChildren} on {@code ctx}.
 	 */
 	@Override public T visitRange(@NotNull SimplangParser.RangeContext ctx) { return visitChildren(ctx); }
-
-	/**
-	 * {@inheritDoc}
-	 * <p/>
-	 * The default implementation returns the result of calling
-	 * {@link #visitChildren} on {@code ctx}.
-	 */
-	@Override public T visitIndexed_id(@NotNull SimplangParser.Indexed_idContext ctx) { return visitChildren(ctx); }
 
 	/**
 	 * {@inheritDoc}

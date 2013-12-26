@@ -185,19 +185,6 @@ public class SimplangBaseListener implements SimplangListener {
 	 * <p/>
 	 * The default implementation does nothing.
 	 */
-	@Override public void enterFunc(@NotNull SimplangParser.FuncContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 * <p/>
-	 * The default implementation does nothing.
-	 */
-	@Override public void exitFunc(@NotNull SimplangParser.FuncContext ctx) { }
-
-	/**
-	 * {@inheritDoc}
-	 * <p/>
-	 * The default implementation does nothing.
-	 */
 	@Override public void enterTypeBasic(@NotNull SimplangParser.TypeBasicContext ctx) { }
 	/**
 	 * {@inheritDoc}
@@ -205,6 +192,19 @@ public class SimplangBaseListener implements SimplangListener {
 	 * The default implementation does nothing.
 	 */
 	@Override public void exitTypeBasic(@NotNull SimplangParser.TypeBasicContext ctx) { }
+
+	/**
+	 * {@inheritDoc}
+	 * <p/>
+	 * The default implementation does nothing.
+	 */
+	@Override public void enterFunc(@NotNull SimplangParser.FuncContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 * <p/>
+	 * The default implementation does nothing.
+	 */
+	@Override public void exitFunc(@NotNull SimplangParser.FuncContext ctx) { }
 
 	/**
 	 * {@inheritDoc}
@@ -244,19 +244,6 @@ public class SimplangBaseListener implements SimplangListener {
 	 * The default implementation does nothing.
 	 */
 	@Override public void exitDecrement(@NotNull SimplangParser.DecrementContext ctx) { }
-
-	/**
-	 * {@inheritDoc}
-	 * <p/>
-	 * The default implementation does nothing.
-	 */
-	@Override public void enterIndexation(@NotNull SimplangParser.IndexationContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 * <p/>
-	 * The default implementation does nothing.
-	 */
-	@Override public void exitIndexation(@NotNull SimplangParser.IndexationContext ctx) { }
 
 	/**
 	 * {@inheritDoc}
@@ -504,19 +491,6 @@ public class SimplangBaseListener implements SimplangListener {
 	 * The default implementation does nothing.
 	 */
 	@Override public void exitRange(@NotNull SimplangParser.RangeContext ctx) { }
-
-	/**
-	 * {@inheritDoc}
-	 * <p/>
-	 * The default implementation does nothing.
-	 */
-	@Override public void enterIndexed_id(@NotNull SimplangParser.Indexed_idContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 * <p/>
-	 * The default implementation does nothing.
-	 */
-	@Override public void exitIndexed_id(@NotNull SimplangParser.Indexed_idContext ctx) { }
 
 	/**
 	 * {@inheritDoc}

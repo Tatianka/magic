@@ -102,18 +102,18 @@ public interface SimplangVisitor<T> extends ParseTreeVisitor<T> {
 	T visitAdd(@NotNull SimplangParser.AddContext ctx);
 
 	/**
-	 * Visit a parse tree produced by {@link SimplangParser#Func}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitFunc(@NotNull SimplangParser.FuncContext ctx);
-
-	/**
 	 * Visit a parse tree produced by {@link SimplangParser#typeBasic}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitTypeBasic(@NotNull SimplangParser.TypeBasicContext ctx);
+
+	/**
+	 * Visit a parse tree produced by {@link SimplangParser#Func}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitFunc(@NotNull SimplangParser.FuncContext ctx);
 
 	/**
 	 * Visit a parse tree produced by {@link SimplangParser#for_statement}.
@@ -135,13 +135,6 @@ public interface SimplangVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitDecrement(@NotNull SimplangParser.DecrementContext ctx);
-
-	/**
-	 * Visit a parse tree produced by {@link SimplangParser#indexation}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitIndexation(@NotNull SimplangParser.IndexationContext ctx);
 
 	/**
 	 * Visit a parse tree produced by {@link SimplangParser#increment}.
@@ -275,13 +268,6 @@ public interface SimplangVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitRange(@NotNull SimplangParser.RangeContext ctx);
-
-	/**
-	 * Visit a parse tree produced by {@link SimplangParser#indexed_id}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitIndexed_id(@NotNull SimplangParser.Indexed_idContext ctx);
 
 	/**
 	 * Visit a parse tree produced by {@link SimplangParser#if_statement}.

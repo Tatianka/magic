@@ -151,17 +151,6 @@ public interface SimplangListener extends ParseTreeListener {
 	void exitAdd(@NotNull SimplangParser.AddContext ctx);
 
 	/**
-	 * Enter a parse tree produced by {@link SimplangParser#Func}.
-	 * @param ctx the parse tree
-	 */
-	void enterFunc(@NotNull SimplangParser.FuncContext ctx);
-	/**
-	 * Exit a parse tree produced by {@link SimplangParser#Func}.
-	 * @param ctx the parse tree
-	 */
-	void exitFunc(@NotNull SimplangParser.FuncContext ctx);
-
-	/**
 	 * Enter a parse tree produced by {@link SimplangParser#typeBasic}.
 	 * @param ctx the parse tree
 	 */
@@ -171,6 +160,17 @@ public interface SimplangListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitTypeBasic(@NotNull SimplangParser.TypeBasicContext ctx);
+
+	/**
+	 * Enter a parse tree produced by {@link SimplangParser#Func}.
+	 * @param ctx the parse tree
+	 */
+	void enterFunc(@NotNull SimplangParser.FuncContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link SimplangParser#Func}.
+	 * @param ctx the parse tree
+	 */
+	void exitFunc(@NotNull SimplangParser.FuncContext ctx);
 
 	/**
 	 * Enter a parse tree produced by {@link SimplangParser#for_statement}.
@@ -204,17 +204,6 @@ public interface SimplangListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitDecrement(@NotNull SimplangParser.DecrementContext ctx);
-
-	/**
-	 * Enter a parse tree produced by {@link SimplangParser#indexation}.
-	 * @param ctx the parse tree
-	 */
-	void enterIndexation(@NotNull SimplangParser.IndexationContext ctx);
-	/**
-	 * Exit a parse tree produced by {@link SimplangParser#indexation}.
-	 * @param ctx the parse tree
-	 */
-	void exitIndexation(@NotNull SimplangParser.IndexationContext ctx);
 
 	/**
 	 * Enter a parse tree produced by {@link SimplangParser#increment}.
@@ -424,17 +413,6 @@ public interface SimplangListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitRange(@NotNull SimplangParser.RangeContext ctx);
-
-	/**
-	 * Enter a parse tree produced by {@link SimplangParser#indexed_id}.
-	 * @param ctx the parse tree
-	 */
-	void enterIndexed_id(@NotNull SimplangParser.Indexed_idContext ctx);
-	/**
-	 * Exit a parse tree produced by {@link SimplangParser#indexed_id}.
-	 * @param ctx the parse tree
-	 */
-	void exitIndexed_id(@NotNull SimplangParser.Indexed_idContext ctx);
 
 	/**
 	 * Enter a parse tree produced by {@link SimplangParser#if_statement}.

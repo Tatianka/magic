@@ -14,40 +14,38 @@ long long iexp(long long a, long long b) {
         return ret;
 }
 
-struct List {
-    long long size;
-    long long capacity;
-    long long item_size;
-    void *pointer;
-};
-
-List create_list(long long size, long long item_size) {
-    List l;
-    l.size = size;
-    l.capacity = size;
-    l.item_size = item_size;
-    l.pointer = malloc(item_size*size);
+long long* create_list(long long size) {
+    long long *l = (long long*) malloc(2+sizeof(long long)*size);
+    *l = size;
+    *(l+1) = size;
     return l;
 }
 
-List resize_list(List list, long long new_size) {
-    if (new_size > list.capacity) {
-        list.capacity = max(2*capacity, new_size);
-        list.pointer = realloc(list.pointer, list.capacity*list.item_size);
+long long* resize_list(long long *list, long long new_size) {
+    long long *l = list;
+    long long capacity = *(l+1);
+    if (new_size > capacity) {
+        capacity = 2*capacity;
+        if (new_size > capacity) {
+            capacity = new_size;
+        }
+        l = realloc(l, 2+capacity*sizeof(long long));
     }
-    list.size = new_size;
-    return list;
+    *l = new_size;
+    *(l+1) = capacity;
+    return l;
 }
 
-void* getItem(List list, long long index) {
-    return list.pointer + list.item_size*index;
+long long* getItem(long long *list, long long index) {
+    return list + 2 + index;
 }
 
-void setItem(List list, long long index, void* item) {
-    *(list.pointer + list.item_size*index) = (char[list.item_size]*) item;
+void setItem(long long *list, long long index, long long item) {
+    long long * p = list + 2 + index;
+    *p = item;
 }
 
-void deleteList(List list) {
-    free(list.pointer);
+void deleteList(long long *list) {
+    free(list);
 }
 
