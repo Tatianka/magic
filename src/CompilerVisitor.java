@@ -130,7 +130,16 @@ public class CompilerVisitor extends SimplangBaseVisitor<CodeFragment> {
     }
 
     private boolean compatibleTypes(Type t1, Type t2) {
+        if (t1.equals(t2)) {
+            return true;
+        }
+
         if ((t1 == BasicType.FLOAT || t1 == BasicType.INT || t1 == BasicType.BOOL) && (t2 == BasicType.FLOAT || t2 == BasicType.INT || t2 == BasicType.BOOL)) {
+            return true;
+        }
+
+        if (t1 instanceof ListType && t2.equals(((ListType) t1).getSubtype()) ||
+            t2 instanceof ListType && t1.equals(((ListType) t2).getSubtype())) {
             return true;
         }
 
@@ -142,6 +151,14 @@ public class CompilerVisitor extends SimplangBaseVisitor<CodeFragment> {
             return BasicType.NOTYPE;
         }
 
+        if (t1 instanceof ListType) {
+            return t1;
+        }
+
+        if (t2 instanceof ListType ) {
+            return t2;
+        }
+
         if (t1 == BasicType.FLOAT || t2 == BasicType.FLOAT) {
             return BasicType.FLOAT;
         }
@@ -149,6 +166,7 @@ public class CompilerVisitor extends SimplangBaseVisitor<CodeFragment> {
         if (t1 == BasicType.INT || t2 == BasicType.INT) {
             return BasicType.INT;
         }
+
 
         return t1;
     }
@@ -164,26 +182,52 @@ public class CompilerVisitor extends SimplangBaseVisitor<CodeFragment> {
         String instruction = "";
         String register = this.generateNewRegister();
 
-        if (v.getType() == BasicType.BOOL && t == BasicType.INT) {
-            instruction = "zext";
+        if (t instanceof ListType) {
+            if (((ListType) t).getSubtype().equals(v.getType())) {
+                code.addCode(
+                    String.format(
+                        "%s = call %s @create_list(%s %s)\n",
+                        register,
+                        t.getCode(),
+                        BasicType.INT.getCode(),
+                        "1"
+                    )
+                );
+
+                code.addCode(
+                    String.format(
+                        "call %s @setItem(%s %s, %s %s, %s %s)\n",
+                        "void",
+                        t.getCode(),
+                        register,
+                        BasicType.INT.getCode(),
+                        "0",
+                        v.getType().getCode(),
+                        v.getRegister()
+                    )
+                );
+            }
         } else {
-            instruction = "sitofp";
+            if (v.getType() == BasicType.BOOL && t == BasicType.INT) {
+                instruction = "zext";
+            } else {
+                instruction = "sitofp";
+            }
+
+            ST temp = new ST(
+                    "<ret> = <instruction> <t1> <r> to <t2>\n"
+            );
+
+            temp.add("r", v.getRegister());
+            temp.add("t1", v.getType().getCode());
+            temp.add("t2", t.getCode());
+            temp.add("instruction", instruction);
+            temp.add("ret", register);
+            code.addCode(temp.render());
         }
 
-        ST temp = new ST(
-                "<ret> = <instruction> <t1> <r> to <t2>\n"
-        );
-
-        temp.add("r", v.getRegister());
-        temp.add("t1", v.getType().getCode());
-        temp.add("t2", t.getCode());
-        temp.add("instruction", instruction);
-        temp.add("ret", register);
-
-        code.addCode(temp.render());
         code.setType(t);
         code.setRegister(register);
-
         return code;
     }
 
@@ -293,8 +337,9 @@ public class CompilerVisitor extends SimplangBaseVisitor<CodeFragment> {
     @Override public CodeFragment visitInit(SimplangParser.InitContext ctx) {
         String base_functions =
             "declare i64* @create_list (i64)\n" +
-            "declare void @setItem (i64*, i64, i64)\n"+
-            "declare i64* @getItem (i64*, i64)\n";
+            "declare void @setItem (i64*, i64, i64)\n" +
+            "declare i64* @getItem (i64*, i64)\n" +
+            "declare i64* @mergeLists (i64*, i64*)\n";
 
         CodeFragment lib_functions = generateLibFunctions();
 
@@ -638,49 +683,72 @@ public class CompilerVisitor extends SimplangBaseVisitor<CodeFragment> {
 
         String instruction = "";
 
-        if (left.getType() != right.getType()) {
-            Type t = getCommonType(left.getType(), right.getType());
-            if (t != BasicType.NOTYPE) {
-                Variable v = new Variable(left.getInfo(), left.getRegister(), left.getType());
-                left.appendCodeFragment(variableTypeConvert(v, t));
+        if (left.getType() instanceof ListType || right.getType() instanceof ListType) {
+            if (operator == SimplangParser.ADD) {
+                if (!left.getType().equals(right.getType())) {
+                    Type t = getCommonType(left.getType(), right.getType());
 
-                Variable v2 = new Variable(right.getInfo(), right.getRegister(), right.getType());
-                right.appendCodeFragment(variableTypeConvert(v2, t));
+                    if (t != BasicType.NOTYPE) {
+                        Variable v = new Variable(left.getInfo(), left.getRegister(), left.getType());
+                        left.appendCodeFragment(variableTypeConvert(v, t));
 
-                type = t;
-            } else {
-                System.err.println(String.format("Incompatible types: '%s', '%s'", left.getType(), right.getType()));
-                code_stub = "";
+                        Variable v2 = new Variable(right.getInfo(), right.getRegister(), right.getType());
+                        right.appendCodeFragment(variableTypeConvert(v2, t));
+
+                        type = t;
+                    } else {
+                        System.err.println(String.format("Incompatible types: '%s', '%s'", left.getType(), right.getType()));
+                        code_stub = "";
+                    }
+                }
+
+                code_stub =  "<ret> = call <type> @mergeLists(<type> <left_val>, <type> <right_val>)\n";
             }
-        }
-
-        if (boolOperators.contains(operator)) {
-            instruction = m.get(operator).getFirst();
-            Variable v = new Variable(left.getInfo(), left.getRegister(), left.getType());
-            left.appendCodeFragment(variableToBool(v));
-
-            Variable v2 = new Variable(right.getInfo(), right.getRegister(), right.getType());
-            right.appendCodeFragment(variableToBool(v));
-
-            type = BasicType.BOOL;
-
         } else {
-            if (type == BasicType.BOOL) {
+            if (!left.getType().equals(right.getType())) {
+                Type t = getCommonType(left.getType(), right.getType());
+                if (t != BasicType.NOTYPE) {
+                    Variable v = new Variable(left.getInfo(), left.getRegister(), left.getType());
+                    left.appendCodeFragment(variableTypeConvert(v, t));
+
+                    Variable v2 = new Variable(right.getInfo(), right.getRegister(), right.getType());
+                    right.appendCodeFragment(variableTypeConvert(v2, t));
+
+                    type = t;
+                } else {
+                    System.err.println(String.format("Incompatible types: '%s', '%s'", left.getType(), right.getType()));
+                    code_stub = "";
+                }
+            }
+
+            if (boolOperators.contains(operator)) {
+                instruction = m.get(operator).getFirst();
                 Variable v = new Variable(left.getInfo(), left.getRegister(), left.getType());
-                left.appendCodeFragment(variableTypeConvert(v, BasicType.INT));
+                left.appendCodeFragment(variableToBool(v));
 
                 Variable v2 = new Variable(right.getInfo(), right.getRegister(), right.getType());
-                right.appendCodeFragment(variableTypeConvert(v2, BasicType.INT));
+                right.appendCodeFragment(variableToBool(v));
 
-                type = BasicType.INT;
-            }
+                type = BasicType.BOOL;
 
-            if (type == BasicType.INT) {
-                instruction = m.get(operator).getFirst();
-            }
+            } else {
+                if (type == BasicType.BOOL) {
+                    Variable v = new Variable(left.getInfo(), left.getRegister(), left.getType());
+                    left.appendCodeFragment(variableTypeConvert(v, BasicType.INT));
 
-            if (type == BasicType.FLOAT) {
-                instruction = m.get(operator).getSecond();
+                    Variable v2 = new Variable(right.getInfo(), right.getRegister(), right.getType());
+                    right.appendCodeFragment(variableTypeConvert(v2, BasicType.INT));
+
+                    type = BasicType.INT;
+                }
+
+                if (type == BasicType.INT) {
+                    instruction = m.get(operator).getFirst();
+                }
+
+                if (type == BasicType.FLOAT) {
+                    instruction = m.get(operator).getSecond();
+                }
             }
         }
 
