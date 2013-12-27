@@ -43,7 +43,7 @@ public class CompilerVisitor extends SimplangBaseVisitor<CodeFragment> {
         Function f;
         f = new Function("printInt", "@printInt", BasicType.INT, p);
         libFunctions.add(f);
-        declFunc("printInt", f);
+        declFunc("printInt", f, new CodePosition(0,0));
 
     }
 
@@ -75,10 +75,10 @@ public class CompilerVisitor extends SimplangBaseVisitor<CodeFragment> {
         return null;
     }
 
-    protected Variable getVar(String identifier) {
+    protected Variable getVar(String identifier, CodePosition p) {
         Map<String, Variable> table = findVarTable(identifier);
         if (table == null) {
-            throw new UnknownVarException(identifier);
+            throw new UnknownVarException(p, identifier);
         }
         return table.get(identifier);
     }
@@ -89,19 +89,19 @@ public class CompilerVisitor extends SimplangBaseVisitor<CodeFragment> {
         return table.get(identifier);
     }
 
-    protected void declFunc(String identifier, Function func) {
+    protected void declFunc(String identifier, Function func, CodePosition p) {
         Map<String, Function> table = functions.getFirst();
         if (!table.containsKey(identifier)) {
             table.put(identifier, func);
         } else {
-            throw new RedeclarationException(identifier);
+            throw new RedeclarationException(p, identifier);
         }
     }
 
-    protected CodeFragment declVar(String identifier, Type t) {
+    protected CodeFragment declVar(String identifier, Type t, CodePosition p) {
         CodeFragment ret = new CodeFragment();
         if (t == BasicType.NOTYPE) {
-            throw new InvalidTypeException(identifier, t);
+            throw new InvalidTypeException(p, identifier, t);
         }
 
         Map<String, Variable> table = variables.getFirst();
@@ -115,7 +115,7 @@ public class CompilerVisitor extends SimplangBaseVisitor<CodeFragment> {
             ret.setRegister(mem_register);
             ret.setType(t);
         } else {
-            throw new RedeclarationException(identifier);
+            throw new RedeclarationException(p, identifier);
         }
         return ret;
     }
@@ -473,15 +473,15 @@ public class CompilerVisitor extends SimplangBaseVisitor<CodeFragment> {
 
         SimplangParser.ExpressionContext exp = ctx.expression();
 
-        CodeFragment var_code = declVar(id, type);
+        CodeFragment var_code = declVar(id, type, new CodePosition(ctx));
         code.addCode(var_code);
         code.setRegister(var_code.getRegister());
         code.setType(var_code.getType());
 
         if (exp != null) {
             CodeFragment val = visit(exp);
-            Variable var = getVar(id);
-            CodeFragment assign = generateAssignCode(var, val);
+            Variable var = getVar(id, new CodePosition(ctx));
+            CodeFragment assign = generateAssignCode(var, val, new CodePosition(ctx));
             code.appendCodeFragment(assign);
         }
 
@@ -506,7 +506,7 @@ public class CompilerVisitor extends SimplangBaseVisitor<CodeFragment> {
 
         String name = generateNewFunctionName();
         Function f = new Function(id, name, rtype, arglist.getArgs(), body);
-        declFunc(id, f);
+        declFunc(id, f, new CodePosition(ctx));
 
         return code;
     }
@@ -530,15 +530,15 @@ public class CompilerVisitor extends SimplangBaseVisitor<CodeFragment> {
             String id = ctx.ID(i).getText();
             String argRegister = this.generateNewRegister();
 
-            CodeFragment arg_code = declVar(id, t);
+            CodeFragment arg_code = declVar(id, t, new CodePosition(ctx));
             code.appendCodeFragment(arg_code);
 
             CodeFragment val_code = new CodeFragment();
             val_code.setRegister(argRegister);
             val_code.setType(t);
 
-            Variable var = getVar(id);
-            CodeFragment assign = generateAssignCode(var, val_code);
+            Variable var = getVar(id, new CodePosition(ctx));
+            CodeFragment assign = generateAssignCode(var, val_code, new CodePosition(ctx));
 
             code.appendCodeFragment(assign);
             code.addArg(new Variable(id, argRegister, t));
@@ -547,18 +547,18 @@ public class CompilerVisitor extends SimplangBaseVisitor<CodeFragment> {
         return (CodeFragment)code;
     }
 
-    public CodeFragment generateAssignCode(Variable var, CodeFragment value) {
+    public CodeFragment generateAssignCode(Variable var, CodeFragment value, CodePosition p) {
         CodeFragment ret = new CodeFragment();
 
         String mem_register = var.getRegister();
         Type type = var.getType();
 
         if (!value.getType().equals(type)) {
-            throw new TypeMismatchException(value.getType(), type);
+            throw new TypeMismatchException(p, value.getType(), type);
         }
 
         if (mem_register == null) {
-            throw new UnknownVarException(var.getName());
+            throw new UnknownVarException(p, var.getName());
         }
         ST template = new ST(
                 "<value_code>" +
@@ -596,18 +596,18 @@ public class CompilerVisitor extends SimplangBaseVisitor<CodeFragment> {
             try {
                 lval = visit(ctx.var());
             } catch (UnknownVarException e) {
-                lval = declVar(e.getId(), expr.getType());
+                lval = declVar(e.getId(), expr.getType(), new CodePosition(ctx));
             }
             code.addCode(lval);
             Variable v = new Variable(lval.getInfo(), lval.getRegister(), lval.getType());
-            code.appendCodeFragment(generateAssignCode(v, expr));
+            code.appendCodeFragment(generateAssignCode(v, expr, new CodePosition(ctx)));
             return code;
     }
 
     @Override public CodeFragment visitVarID(SimplangParser.VarIDContext ctx) {
         CodeFragment code = new CodeFragment();
         String id = ctx.ID().getText();
-        Variable var = getVar(id);
+        Variable var = getVar(id, new CodePosition(ctx));
         code.setInfo(var.getName());
         code.setRegister(var.getRegister());
         code.setType(var.getType());
@@ -619,7 +619,7 @@ public class CompilerVisitor extends SimplangBaseVisitor<CodeFragment> {
         try {
             var = visit(ctx.var());
         } catch (UnknownVarException e) {
-            throw new InvalidIndexationException();
+            throw new InvalidIndexationException(new CodePosition(ctx));
         }
         CodeFragment index = visit(ctx.expression());
 

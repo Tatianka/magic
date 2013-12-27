@@ -1,4 +1,4 @@
-public class TypeMismatchException extends RuntimeException {
+public class TypeMismatchException extends CodeException {
     private Type first;
     private Type second;
 
@@ -10,12 +10,9 @@ public class TypeMismatchException extends RuntimeException {
         return this.second;
     }
 
-    public TypeMismatchException(Type t1, Type t2) {
+    public TypeMismatchException(CodePosition p, Type t1, Type t2) {
+        super(p, String.format("Type Error: type '%s' does match expected type '%s'", t1, t2));
         this.first = t1;
         this.second = t2;
-    }
-
-    public String toString() {
-        return String.format("Type Error: type '%s' does match expected type '%s'", first, second);
     }
 }

@@ -1,4 +1,4 @@
-public class InvalidTypeException extends RuntimeException {
+public class InvalidTypeException extends CodeException {
     private String id = "";
     private Type type;
 
@@ -10,12 +10,10 @@ public class InvalidTypeException extends RuntimeException {
         return this.id;
     }
 
-    public InvalidTypeException(String id, Type type) {
+    public InvalidTypeException(CodePosition p, String id, Type type) {
+        super(p, String.format("Error: invalid type '%s' of '%s'.", type, id));
         this.id = id;
         this.type = type;
     }
 
-    public String toString() {
-        return String.format("Error: invalid type '%s' of '%s'.", type, id);
-    }
 }

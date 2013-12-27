@@ -19,7 +19,6 @@ long long* create_list(long long size) {
     long long *l = (long long*) malloc(sizeof(long long)*(size+2));
     *l = size;
     *(l+1) = size;
-    // printf("Create: %p\n", l);
     return l;
 }
 
@@ -39,7 +38,6 @@ long long* resize_list(long long *list, long long new_size) {
 }
 
 long long* getItem(long long *list, long long index) {
-    // printf("Get: %p\n", list);
     return list + 2 + index;
 }
 
@@ -53,10 +51,29 @@ void deleteList(long long *list) {
 }
 
 long long * mergeLists(long long *list1, long long *list2) {
-    // printf("Merge %p %p\n", list1, list2);
     long long * l = create_list(*list1 + *list2);
     memcpy(l + 2, list1 + 2, (*list1)*sizeof(long long));
     memcpy(l + (*list1) + 2, list2 + 2, (*list2)*sizeof(long long));
     return l;
+}
+
+long long getSize(long long* list) {
+    return *list;
+}
+
+long long * create_range(long long start, long long end, long long jump) {
+    long long *r = (long long*) malloc(3*sizeof(long long));
+    *r = start;
+    *(r + 1) = end;
+    *(r + 2) = jump;
+    return r;
+}
+
+long long getRangeItem(long long* range, long long i) {
+    return *range + *(range + 2) * i;
+}
+
+long long getRangeSize(long long* range) {
+    return (*(range + 1) - *range) / *(range + 2);
 }
 
