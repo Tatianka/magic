@@ -42,19 +42,6 @@ public class SimplangBaseListener implements SimplangListener {
 	 * <p/>
 	 * The default implementation does nothing.
 	 */
-	@Override public void enterAttr(@NotNull SimplangParser.AttrContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 * <p/>
-	 * The default implementation does nothing.
-	 */
-	@Override public void exitAttr(@NotNull SimplangParser.AttrContext ctx) { }
-
-	/**
-	 * {@inheritDoc}
-	 * <p/>
-	 * The default implementation does nothing.
-	 */
 	@Override public void enterVarID(@NotNull SimplangParser.VarIDContext ctx) { }
 	/**
 	 * {@inheritDoc}
@@ -62,6 +49,19 @@ public class SimplangBaseListener implements SimplangListener {
 	 * The default implementation does nothing.
 	 */
 	@Override public void exitVarID(@NotNull SimplangParser.VarIDContext ctx) { }
+
+	/**
+	 * {@inheritDoc}
+	 * <p/>
+	 * The default implementation does nothing.
+	 */
+	@Override public void enterAttr(@NotNull SimplangParser.AttrContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 * <p/>
+	 * The default implementation does nothing.
+	 */
+	@Override public void exitAttr(@NotNull SimplangParser.AttrContext ctx) { }
 
 	/**
 	 * {@inheritDoc}
@@ -218,19 +218,6 @@ public class SimplangBaseListener implements SimplangListener {
 	 * The default implementation does nothing.
 	 */
 	@Override public void exitFor_statement(@NotNull SimplangParser.For_statementContext ctx) { }
-
-	/**
-	 * {@inheritDoc}
-	 * <p/>
-	 * The default implementation does nothing.
-	 */
-	@Override public void enterSlicing(@NotNull SimplangParser.SlicingContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 * <p/>
-	 * The default implementation does nothing.
-	 */
-	@Override public void exitSlicing(@NotNull SimplangParser.SlicingContext ctx) { }
 
 	/**
 	 * {@inheritDoc}

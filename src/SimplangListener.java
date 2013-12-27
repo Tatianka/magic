@@ -30,17 +30,6 @@ public interface SimplangListener extends ParseTreeListener {
 	void exitValBool(@NotNull SimplangParser.ValBoolContext ctx);
 
 	/**
-	 * Enter a parse tree produced by {@link SimplangParser#Attr}.
-	 * @param ctx the parse tree
-	 */
-	void enterAttr(@NotNull SimplangParser.AttrContext ctx);
-	/**
-	 * Exit a parse tree produced by {@link SimplangParser#Attr}.
-	 * @param ctx the parse tree
-	 */
-	void exitAttr(@NotNull SimplangParser.AttrContext ctx);
-
-	/**
 	 * Enter a parse tree produced by {@link SimplangParser#VarID}.
 	 * @param ctx the parse tree
 	 */
@@ -50,6 +39,17 @@ public interface SimplangListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitVarID(@NotNull SimplangParser.VarIDContext ctx);
+
+	/**
+	 * Enter a parse tree produced by {@link SimplangParser#Attr}.
+	 * @param ctx the parse tree
+	 */
+	void enterAttr(@NotNull SimplangParser.AttrContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link SimplangParser#Attr}.
+	 * @param ctx the parse tree
+	 */
+	void exitAttr(@NotNull SimplangParser.AttrContext ctx);
 
 	/**
 	 * Enter a parse tree produced by {@link SimplangParser#ValFloat}.
@@ -182,17 +182,6 @@ public interface SimplangListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitFor_statement(@NotNull SimplangParser.For_statementContext ctx);
-
-	/**
-	 * Enter a parse tree produced by {@link SimplangParser#slicing}.
-	 * @param ctx the parse tree
-	 */
-	void enterSlicing(@NotNull SimplangParser.SlicingContext ctx);
-	/**
-	 * Exit a parse tree produced by {@link SimplangParser#slicing}.
-	 * @param ctx the parse tree
-	 */
-	void exitSlicing(@NotNull SimplangParser.SlicingContext ctx);
 
 	/**
 	 * Enter a parse tree produced by {@link SimplangParser#decrement}.

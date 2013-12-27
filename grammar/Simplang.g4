@@ -39,6 +39,7 @@ block_statement
 var : ID # VarID
     | var LBRACK expression RBRACK #VarList
     ;
+
 val : var # ValVar
     | INT # ValInt
     | FLOAT # ValFloat
@@ -49,7 +50,7 @@ val : var # ValVar
     | list # ValList
     | range # ValRange;
 
-simple_assignment: var op=('=' | ':=') expression;
+simple_assignment: var '=' expression;
 
 complex_assignment
     : var op = (
@@ -87,7 +88,6 @@ func_call: ID LPAR param_list RPAR;
 construct: NEW type LPAR param_list RPAR;
 member: var | func_call;
 attribute_ref: ((LPAR expression RPAR) | var) '.' member;
-slicing: ((LPAR expression RPAR) | var) LBRACK expression':'expression(':'expression)? RBRACK;
 
 var_def: type ID ('=' expression)?;
 
@@ -108,7 +108,7 @@ expression
     | decrement # Dec
     | LPAR expression RPAR # Paren
     | (func_call | construct) # Func
-    | slicing # Slice
+    | expression LBRACK expression':'expression(':'expression)? RBRACK # Slice
     | expression LBRACK expression RBRACK # Index
     | attribute_ref # Attr
     | EXP<assoc=right> expression # Exp

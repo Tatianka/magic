@@ -25,18 +25,18 @@ public interface SimplangVisitor<T> extends ParseTreeVisitor<T> {
 	T visitValBool(@NotNull SimplangParser.ValBoolContext ctx);
 
 	/**
-	 * Visit a parse tree produced by {@link SimplangParser#Attr}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitAttr(@NotNull SimplangParser.AttrContext ctx);
-
-	/**
 	 * Visit a parse tree produced by {@link SimplangParser#VarID}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitVarID(@NotNull SimplangParser.VarIDContext ctx);
+
+	/**
+	 * Visit a parse tree produced by {@link SimplangParser#Attr}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitAttr(@NotNull SimplangParser.AttrContext ctx);
 
 	/**
 	 * Visit a parse tree produced by {@link SimplangParser#ValFloat}.
@@ -121,13 +121,6 @@ public interface SimplangVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitFor_statement(@NotNull SimplangParser.For_statementContext ctx);
-
-	/**
-	 * Visit a parse tree produced by {@link SimplangParser#slicing}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitSlicing(@NotNull SimplangParser.SlicingContext ctx);
 
 	/**
 	 * Visit a parse tree produced by {@link SimplangParser#decrement}.

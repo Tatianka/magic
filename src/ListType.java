@@ -1,6 +1,7 @@
 public class ListType implements Type {
     private String code = "i64*";
     private String name = "";
+    private int current_pos = 0;
 
     public String getName() {
         return this.name;
@@ -39,5 +40,15 @@ public class ListType implements Type {
 
     @Override public boolean equals(Object t) {
         return this.name.equals(t.toString());
+    }
+
+    public boolean isInteger() {
+        return false;
+    }
+    public boolean isNumeric() {
+        return false;
+    }
+    public boolean isIterable() {
+        return true;
     }
 }
