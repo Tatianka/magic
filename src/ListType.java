@@ -1,7 +1,7 @@
 public class ListType implements Type {
     private String code = "i8*";
     private String name = "";
-    private int current_pos = 0;
+    private Type subtype;
 
     public String getName() {
         return this.name;
@@ -10,8 +10,6 @@ public class ListType implements Type {
     public void setName(String name) {
         this.name = name;
     }
-    private int size = 16;
-    private Type subtype;
 
     public Type getSubtype() {
         return this.subtype;
@@ -19,10 +17,6 @@ public class ListType implements Type {
 
     public void setSubtype(Type subtype) {
         this.subtype = subtype;
-    }
-
-    public int getSize() {
-        return this.size;
     }
 
     public String getCode() {
@@ -50,5 +44,9 @@ public class ListType implements Type {
     }
     public boolean isIterable() {
         return true;
+    }
+
+    public String getDefaultValue() {
+        return "[]";
     }
 }

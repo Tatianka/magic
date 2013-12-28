@@ -1,5 +1,5 @@
 bool check(int p)
-    for i=[2:p]
+    for i in [2:p]
         if p % i == 0
             return false
     return true
@@ -12,6 +12,6 @@ void main()
 
     while t<n
         if check(i)
-            print(i)
+            printInt(i)
             t++
         i++

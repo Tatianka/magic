@@ -6,7 +6,7 @@ public class UnknownVarException extends CodeException {
     }
 
     public UnknownVarException(CodePosition p, String id) {
-        super(p, String.format("Error: cannot redeclare idenifier '%s'.", id));
+        super(p, String.format("Error: unkonown idenifier '%s'.", id));
         this.id = id;
     }
 }

@@ -41,6 +41,15 @@ vector<T> * mergeLists(vector<T> *list1, vector<T> *list2) {
     return v;
 }
 
+template <class T>
+vector<T> * multiplyList(vector<T> *list1, LL val) {
+    vector<T> *v = createList<T>(0);
+    for (LL i = 0; i < val; i++) {
+        v->insert(v->end(), list1->begin(), list1->end());
+    }
+    return v;
+}
+
 
 #ifdef __cplusplus
 extern "C"
@@ -96,6 +105,11 @@ void* mergeListsInt(void *list1, void *list2) {
     return (void*) mergeLists<LL>((vector<LL> *)list1, (vector<LL> *)list2);
 }
 
+void* multiplyListInt(void *list1, LL val) {
+    return (void*) multiplyList<LL>((vector<LL> *)list1, val);
+}
+
+
 //--Float------------------
 
 double printFloat(double a) {
@@ -117,6 +131,11 @@ double* getListItemFloat(void* list, LL index) {
 void* mergeListsFloat(void *list1, void *list2) {
        return (void*) mergeLists<double>((vector<double> *)list1, (vector<double> *)list2);
 }
+
+void* multiplyListFloat(void *list1, LL val) {
+    return (void*) multiplyList<double>((vector<double> *)list1, val);
+}
+
 
 //--Range---------------------
 

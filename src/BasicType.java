@@ -2,27 +2,18 @@ import java.util.HashMap;
 
 public enum BasicType implements Type {
     // VOID("void" ,"void", 0),
-    // POINTER("POINTER", ""),
-    BOOL("bool", "i1", 1, true, true, false),
-    INT("int", "i64", 4, true, true, false),
-    FLOAT("float", "double", 4, false, true, false),
-    NOTYPE("NOTYPE", "", 0, false, false, false);
+    BOOL("bool", "i1", "0", true, true, false),
+    INT("int", "i64", "0", true, true, false),
+    FLOAT("float", "double", "0.0", false, true, false),
+    NOTYPE("NOTYPE", "", "", false, false, false);
 
     private String code = "";
     private String name = "";
-    private int size = 0;
+    private String def = "";
 
     boolean integer = false;
     boolean numeric = false;
     boolean iterable = false;
-
-    public int getSize() {
-        return this.size;
-    }
-
-    public void setSize(int size) {
-        this.size = size;
-    }
 
     public String getCode() {
         return this.code;
@@ -56,10 +47,10 @@ public enum BasicType implements Type {
         return this.name;
     }
 
-    private BasicType(String name, String code, int size, boolean integer, boolean numeric, boolean iterable) {
+    private BasicType(String name, String code, String def, boolean integer, boolean numeric, boolean iterable) {
         this.name = name;
         this.code = code;
-        this.size = size;
+        this.def = def;
         this.integer = integer;
         this.numeric = numeric;
         this.iterable = iterable;
@@ -75,5 +66,9 @@ public enum BasicType implements Type {
 
     public boolean isIterable() {
         return iterable;
+    }
+
+    public String getDefaultValue() {
+        return this.def;
     }
 }
