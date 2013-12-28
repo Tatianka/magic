@@ -71,7 +71,8 @@ if_statement: IF expression NL block (ELIF expression NL block)* (ELSE NL block)
 
 while_statement: WHILE expression NL block;
 
-for_statement: FOR simple_assignment NL block;
+/*for_statement: FOR simple_assignment NL block;*/
+for_statement: FOR ID 'in' expression NL block;
 
 list : LBRACK param_list RBRACK;
 range : LBRACK expression':'expression(':'expression)? RBRACK;

@@ -1,5 +1,5 @@
 public class ListType implements Type {
-    private String code = "i64*";
+    private String code = "i8*";
     private String name = "";
     private int current_pos = 0;
 

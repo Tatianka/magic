@@ -3,4 +3,5 @@ make
 cd -
 make
 cd lib
-gcc -shared -fPIC -std=c99 library.c -o library.so
+g++ -shared -fPIC library.cpp -o libsimlang.so
+
