@@ -1,7 +1,6 @@
-public class ListType implements Type {
+public class ListType extends IterableType {
     private String code = "i8*";
     private String name = "";
-    private Type subtype;
 
     public String getName() {
         return this.name;
@@ -9,14 +8,6 @@ public class ListType implements Type {
 
     public void setName(String name) {
         this.name = name;
-    }
-
-    public Type getSubtype() {
-        return this.subtype;
-    }
-
-    public void setSubtype(Type subtype) {
-        this.subtype = subtype;
     }
 
     public String getCode() {
@@ -28,8 +19,8 @@ public class ListType implements Type {
     }
 
     ListType(Type subtype) {
+        super(subtype);
         this.setName(subtype.toString() + "[]");
-        this.setSubtype(subtype);
     }
 
     @Override public boolean equals(Object t) {
@@ -39,11 +30,9 @@ public class ListType implements Type {
     public boolean isInteger() {
         return false;
     }
+
     public boolean isNumeric() {
         return false;
-    }
-    public boolean isIterable() {
-        return true;
     }
 
     public String getDefaultValue() {

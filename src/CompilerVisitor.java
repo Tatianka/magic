@@ -361,11 +361,13 @@ public class CompilerVisitor extends SimplangBaseVisitor<CodeFragment> {
             "declare i64* @getListItemInt (i8*, i64)\n" +
             "declare i8* @mergeListsInt (i8*, i8*)\n" +
             "declare i8* @multiplyListInt (i8*, i64)\n" +
+            "declare i64 @sizeListInt (i8*)\n" +
             "declare i8* @createListFloat (i64)\n" +
             "declare void @setListItemFloat (i8*, i64, double)\n" +
             "declare double* @getListItemFloat (i8*, i64)\n" +
             "declare i8* @mergeListsFloat (i8*, i8*)\n" +
-            "declare i8* @multiplyListFloat (i8*, i64)\n";
+            "declare i8* @multiplyListFloat (i8*, i64)\n" +
+            "declare i64 @sizeListFloat (i8*)\n";
 
         CodeFragment lib_functions = generateLibFunctions();
 
@@ -1076,5 +1078,97 @@ public class CompilerVisitor extends SimplangBaseVisitor<CodeFragment> {
 
     @Override public CodeFragment visitParen(SimplangParser.ParenContext ctx) {
         return visit(ctx.expression());
+    }
+
+    @Override public CodeFragment visitFor_statement(SimplangParser.For_statementContext ctx) {
+        addTable();
+        CodeFragment expr = visit(ctx.expression());
+        CodeFragment var = declVar(ctx.ID().getText(), ((IterableType)expr.getType()).getSubtype(), new CodePosition(ctx));
+
+        CodeFragment block = visit(ctx.block());
+
+        String ireg = generateNewRegister();
+        String vreg = var.getRegister();
+
+        String get_fname = "";
+        String size_fname = "";
+
+        IterableType t = (IterableType) expr.getType();
+
+        if (expr.getType() instanceof ListType) {
+            get_fname = "@getListItem"+getListFunctionSuffix(t.getSubtype());
+            size_fname = "@sizeList"+getListFunctionSuffix(t.getSubtype());
+        }
+
+        ST template = new ST(
+            "<expression_code>" +
+            "<var_code>" +
+            "<iptr> = alloca i64\n" +
+            "<init_ni> = add i64 0, 0\n" +
+            "store i64 <init_ni>, i64* <iptr>\n" +
+            "<init_vptr> = call <type>* <get_fname>(i8* <iterable>, i64 <init_ni>)\n" +
+            "<init_v> = load <type>* <init_vptr>\n" +
+            "store <type> <init_v>, <type>* <varptr>\n" +
+
+            "br label %<cmp_label>\n" +
+            "<cmp_label>:\n" +
+            "<size> = call i64 <size_fname>(i8* <iterable>)\n" +
+            "<cmp_i> = load i64* <iptr>\n" +
+            "<cmp_register> = icmp slt i64 <cmp_i>, <size>\n" +
+
+            "br i1 <cmp_register>, label %<body_label>, label %<end_label>\n" +
+            "<body_label>:\n" +
+            "<body_code>" +
+
+            "<iter_i> = load i64* <iptr>" +
+            "<iter_ni> = add i64 <iter_i>, 1\n" +
+            "store i64 <iter_ni>, i64* <iptr>\n" +
+            "<iter_vptr> = call <type>* <get_fname>(i8* <iterable>, i64 <iter_ni>)\n" +
+            "<iter_v> = load <type>* <iter_vptr>\n" +
+            "store <type> <iter_v>, <type>* <varptr>\n" +
+
+            "br label %<cmp_label>\n" +
+            "<end_label>:\n" +
+            "<ret> = add <rtype> 0, 0\n"
+        );
+
+        template.add("expression_code", expr);
+        template.add("var_code", var);
+
+        template.add("init_ni", generateNewRegister());
+        template.add("init_v", generateNewRegister());
+        template.add("init_vptr", generateNewRegister());
+        template.add("size", generateNewRegister());
+        template.add("cmp_i", generateNewRegister());
+        template.add("iter_i", generateNewRegister());
+        template.add("iter_ni", generateNewRegister());
+        template.add("iter_v", generateNewRegister());
+        template.add("iter_vptr", generateNewRegister());
+
+        template.add("iptr", ireg);
+        template.add("varptr", vreg);
+        template.add("iterable", expr.getRegister());
+        template.add("get_fname", get_fname);
+        template.add("size_fname", size_fname);
+        template.add("type", t.getSubtype().getCode());
+
+        template.add("cmp_register", generateNewRegister());
+
+        template.add("cmp_label", generateNewLabel());
+        template.add("body_label", generateNewLabel());
+        template.add("end_label", generateNewLabel());
+        template.add("body_code", block);
+
+        String end_register = generateNewRegister();
+        template.add("ret", end_register);
+        template.add("rtype", BasicType.INT.getCode());
+
+        removeTable();
+
+        CodeFragment ret = new CodeFragment();
+        ret.addCode(template.render());
+        ret.setRegister(end_register);
+        ret.setType(BasicType.INT);
+        return ret;
     }
 }

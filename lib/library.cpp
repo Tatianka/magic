@@ -78,7 +78,11 @@ public:
     }
 
     bool last(LL i) {
-        return i>=end;
+        return i >= end;
+    }
+
+    LL size() {
+        return (end - start)/jump;
     }
 
     Range(LL s, LL e, LL j) {
@@ -109,6 +113,9 @@ void* multiplyListInt(void *list1, LL val) {
     return (void*) multiplyList<LL>((vector<LL> *)list1, val);
 }
 
+LL sizeListInt(void* list1) {
+    return ((vector<LL> *)list1)->size();
+}
 
 //--Float------------------
 
@@ -136,6 +143,9 @@ void* multiplyListFloat(void *list1, LL val) {
     return (void*) multiplyList<double>((vector<double> *)list1, val);
 }
 
+LL sizeListFloat(void* list1) {
+    return ((vector<double> *)list1)->size();
+}
 
 //--Range---------------------
 
