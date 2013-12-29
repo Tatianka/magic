@@ -1,0 +1,6 @@
+a = 0
+a += 10
+b = []
+b += 10
+printInt(a)
+printInt(b[0])

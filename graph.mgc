@@ -1,15 +1,15 @@
 int dfs(int v, int[][] p, bool[] visited)
     if visited[v]
-        return
+        return 0
     visited[v] = true
     for i in p[v]
         dfs(i, p, visited)
-
+    return 0
 
 n = readInt()
 m = readInt()
 
-v = [[]]*n
+v = [[]]*n #ZLE
 
 for i in [0:m]
     a = readInt()
@@ -23,6 +23,8 @@ visited = [false]*n
 components = 0
 
 for i in [0:n]
-    if (!visited[i])
-        components++
-        dfs(i, p, visited)
+    if (visited[i] == false)
+        components += 1
+        dfs(i, v, visited)
+
+printInt(components)

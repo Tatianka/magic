@@ -12,5 +12,5 @@ i = 2
 while t<n
     if check(i)
         printInt(i)
-        t++
-    i++
+        t+=1
+    i+=1

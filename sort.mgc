@@ -2,7 +2,7 @@ n = readInt()
 int[] p
 
 for i in [0:n]
-    p += (readInt())
+    p += readInt()
 
 for i in [0:n]
     for j in [i+1:n]

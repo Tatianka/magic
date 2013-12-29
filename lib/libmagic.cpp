@@ -44,10 +44,10 @@ T read() {
     return v;
 }
 
-
 template <class T>
 vector<T>* createList(LL size) {
     vector<T>* v = new vector<T>(size);
+    // cout << "List:" << v << endl;
     return v;
 }
 
@@ -61,13 +61,16 @@ vector<T>* createListFromRange(Range<T>* range) {
 }
 
 template <class T>
-T* getListItem(vector<T> *list, LL index) {
-    return &(*list)[index];
+T getListItem(vector<T> *list, LL index) {
+    T item = (*list)[index];
+    // cout << "Get:" << item << endl;
+    return item;
 }
 
 template <class T>
 void setListItem(vector<T> *list, LL index, T item) {
     (*list)[index] = item;
+    //cout << "Set:" << item << endl;
 }
 
 // template <class T>
@@ -91,8 +94,6 @@ vector<T> * multiplyList(vector<T> *list1, LL val) {
     }
     return v;
 }
-
-
 
 #ifdef __cplusplus
 extern "C"
@@ -132,7 +133,7 @@ void setListItemInt(void* list, LL index, LL item) {
     setListItem<LL>((vector<LL>*) list, index, item);
 }
 
-LL* getListItemInt(void* list, LL index) {
+LL getListItemInt(void* list, LL index) {
     getListItem<LL>((vector<LL>*) list, index);
 }
 
@@ -174,7 +175,7 @@ void setListItemFloat(void* list, LL index, double item) {
     setListItem<double>((vector<double>*) list, index, item);
 }
 
-double* getListItemFloat(void* list, LL index) {
+double getListItemFloat(void* list, LL index) {
     getListItem<double>((vector<double>*) list, index);
 }
 
@@ -190,6 +191,41 @@ LL sizeListFloat(void* list1) {
     return ((vector<double> *)list1)->size();
 }
 
+//--Bool------------------
+
+LL printBool(bool a) {
+    return print(a);
+}
+
+void* createListBool(LL size) {
+    return (void*) createList<bool>(size);
+}
+
+void* createListFromRangeBool(void* range) {
+    return (void*) createListFromRange<bool>((Range<bool>*) range);
+}
+
+void setListItemBool(void* list, LL index, bool item) {
+    setListItem<bool>((vector<bool>*) list, index, item);
+}
+
+bool getListItemBool(void* list, LL index) {
+    getListItem<bool>((vector<bool>*) list, index);
+}
+
+void* mergeListsBool(void *list1, void *list2) {
+       return (void*) mergeLists<bool>((vector<bool> *)list1, (vector<bool> *)list2);
+}
+
+void* multiplyListBool(void *list1, LL val) {
+    return (void*) multiplyList<bool>((vector<bool> *)list1, val);
+}
+
+LL sizeListBool(void* list1) {
+    return ((vector<bool> *)list1)->size();
+}
+
+
 //--List----------------------
 
 void* createListPointer(LL size) {
@@ -200,7 +236,7 @@ void setListItemPointer(void* list, LL index, void* item) {
     setListItem<void*>((vector<void*>*) list, index, item);
 }
 
-void** getListItemPointer(void* list, LL index) {
+void* getListItemPointer(void* list, LL index) {
     getListItem<void*>((vector<void*>*) list, index);
 }
 
@@ -215,10 +251,6 @@ void* multiplyListPointer(void *list1, LL val) {
 LL sizeListPointer(void* list1) {
     return ((vector<void*> *)list1)->size();
 }
-
-//--Range---------------------
-
-
 
 #ifdef __cplusplus
 }

@@ -28,7 +28,6 @@ public class CompilerVisitor extends MagicBaseVisitor<CodeFragment> {
         return String.format("@F%d", this.functionIndex++);
     }
 
-
     public CompilerVisitor() {
         super();
         addTable();
@@ -93,9 +92,11 @@ public class CompilerVisitor extends MagicBaseVisitor<CodeFragment> {
         return table.get(identifier);
     }
 
-    protected Function getFunc(String identifier) {
+    protected Function getFunc(String identifier, CodePosition p) {
         Map<String, Function> table = findFuncTable(identifier);
-        if (table == null) return null;
+        if (table == null) {
+            throw new UnknownVarException(p, identifier);
+        }
         return table.get(identifier);
     }
 
@@ -298,6 +299,9 @@ public class CompilerVisitor extends MagicBaseVisitor<CodeFragment> {
         if (t.equals(BasicType.FLOAT)) {
             listType = "Float";
         }
+        if (t.equals(BasicType.BOOL)) {
+            listType = "Bool";
+        }
         if (t instanceof IterableType) {
             listType = "Pointer";
         }
@@ -376,7 +380,7 @@ public class CompilerVisitor extends MagicBaseVisitor<CodeFragment> {
         ST list_functions = new ST(
             "declare i8* @createList<list_type> (i64)\n" +
             "declare void @setListItem<list_type> (i8*, i64, <type>)\n" +
-            "declare <type>* @getListItem<list_type> (i8*, i64)\n" +
+            "declare <type> @getListItem<list_type> (i8*, i64)\n" +
             "declare i8* @mergeLists<list_type> (i8*, i8*)\n" +
             "declare i8* @multiplyList<list_type> (i8*, i64)\n" +
             "declare i64 @sizeList<list_type> (i8*)\n"
@@ -408,6 +412,7 @@ public class CompilerVisitor extends MagicBaseVisitor<CodeFragment> {
             getListFunctions(BasicType.INT) +
             getRangeFunctions(BasicType.INT) +
             getListFunctions(BasicType.FLOAT) +
+            getListFunctions(BasicType.BOOL) +
             getListFunctions(new ListType(BasicType.NOTYPE));
 
         CodeFragment lib_functions = generateLibFunctions();
@@ -441,11 +446,47 @@ public class CompilerVisitor extends MagicBaseVisitor<CodeFragment> {
         return code;
     }
 
+    private CodeFragment loadIndexedVar(IndexationCodeFragment var, CodePosition p) {
+        IterableType t = (IterableType) var.getType();
+        String register = generateNewRegister();
+
+        CodeFragment code = new CodeFragment();
+        code.addCode(var);
+
+        String ftype = "Range";
+        if (t instanceof ListType) {
+            ftype = "List";
+        }
+
+        ST template = new ST(
+            "<ret> = call <type> @get<ftype>Item<suffix>(<iterable_type> <iterable>, <index_type> <index>)\n"
+        );
+
+        template.add("ret", register);
+        template.add("type", t.getSubtype().getCode());
+        template.add("ftype", ftype);
+        template.add("suffix", getFunctionSuffix(t.getSubtype()));
+        template.add("iterable_type", var.getType().getCode());
+        template.add("iterable", var.getRegister());
+        template.add("index_type", var.getIndexType().getCode());
+        template.add("index", var.getIndexRegister());
+        code.addCode(template.render());
+
+        code.setRegister(register);
+        code.setType(t.getSubtype());
+
+        return code;
+    }
+
     @Override public CodeFragment visitValVar(MagicParser.ValVarContext ctx) {
         CodeFragment v = visit(ctx.var());
         CodeFragment code = new CodeFragment();
-        code.addCode(v);
-        code.appendCodeFragment(loadFromMemory(v.getRegister(), v.getType()));
+        if (v instanceof IndexationCodeFragment) {
+            code.appendCodeFragment(loadIndexedVar((IndexationCodeFragment) v, new CodePosition(ctx)));
+        } else {
+            code.addCode(v);
+            code.appendCodeFragment(loadFromMemory(v.getRegister(), v.getType()));
+        }
         return code;
     }
 
@@ -615,23 +656,24 @@ public class CompilerVisitor extends MagicBaseVisitor<CodeFragment> {
 
     @Override public CodeFragment visitFunc_def(MagicParser.Func_defContext ctx) {
         CodeFragment code = new CodeFragment();
+        String name = generateNewFunctionName();
 
         Type rtype = visit(ctx.type()).getType();
         String id = ctx.ID().getText();
 
-        addTable();
-        ArgListCodeFragment arglist = (ArgListCodeFragment) visit(ctx.arglist());
         CodeFragment body = new CodeFragment();
+        ArgListCodeFragment arglist;
+        Function f = new Function(id, name, rtype, null, body);
+        declFunc(id, f, new CodePosition(ctx));
+        addTable();
+        arglist = (ArgListCodeFragment) visit(ctx.arglist());
+        f.setParams(arglist.getArgs());
         body.appendCodeFragment(arglist);
         body.appendCodeFragment(visit(ctx.block()));
         removeTable();
 
         code.setType(body.getType());
         code.setRegister(body.getRegister());
-
-        String name = generateNewFunctionName();
-        Function f = new Function(id, name, rtype, arglist.getArgs(), body);
-        declFunc(id, f, new CodePosition(ctx));
 
         return code;
     }
@@ -683,11 +725,6 @@ public class CompilerVisitor extends MagicBaseVisitor<CodeFragment> {
             value.appendCodeFragment(variableTypeConvert(valvar, type));
         }
 
-
-        if (mem_register == null) {
-            throw new UnknownVarException(p, var.getName());
-        }
-
         ST template = new ST(
                 "<value_code>" +
                 "store <type> <value_register>, <type>* <mem_register>\n"
@@ -697,6 +734,36 @@ public class CompilerVisitor extends MagicBaseVisitor<CodeFragment> {
         template.add("type", value.getType().getCode());
         template.add("value_register", value.getRegister());
         template.add("mem_register", mem_register);
+
+        ret.addCode(template.render());
+        ret.setRegister(value.getRegister());
+        ret.setType(value.getType());
+        return ret;
+    }
+
+    public CodeFragment generateIndexAssignCode(IndexationCodeFragment var, CodeFragment value, CodePosition p) {
+        CodeFragment ret = new CodeFragment();
+        //ret.addCode(var);
+        ret.addCode(value);
+
+        Type type =((ListType) var.getType()).getSubtype();
+
+        if (!value.getType().equals(type)) {
+             Variable valvar = new Variable(value.getInfo(), value.getRegister(), value.getType());
+             value.appendCodeFragment(variableTypeConvert(valvar, type));
+        }
+
+        ST template = new ST(
+            "call void @setListItem<suffix>(<list_type> <list>, <index_type> <index>, <item_type> <item>)\n"
+        );
+
+        template.add("suffix", getFunctionSuffix(((ListType)var.getType()).getSubtype()));
+        template.add("list_type", var.getType().getCode());
+        template.add("list", var.getRegister());
+        template.add("index_type", var.getIndexType().getCode());
+        template.add("index", var.getIndexRegister());
+        template.add("item_type", value.getType().getCode());
+        template.add("item", value.getRegister());
 
         ret.addCode(template.render());
         ret.setRegister(value.getRegister());
@@ -730,12 +797,7 @@ public class CompilerVisitor extends MagicBaseVisitor<CodeFragment> {
         CodeFragment code = new CodeFragment();
         CodeFragment expr = visit(ctx.expression());
         CodeFragment lval;
-        try {
-            lval = visit(ctx.var());
-        } catch (UnknownVarException e) {
-            lval = declVar(e.getId(), expr.getType(), new CodePosition(ctx));
-        }
-        code.addCode(lval);
+        lval = visit(ctx.var());
 
         Map<Integer, Integer> opm = new HashMap<Integer, Integer>();
         opm.put(MagicParser.ADD_ASSIGN, MagicParser.ADD);
@@ -747,9 +809,15 @@ public class CompilerVisitor extends MagicBaseVisitor<CodeFragment> {
         opm.put(MagicParser.EXP_ASSIGN, MagicParser.EXP);
         int op = ctx.op.getType();
 
-        CodeFragment rval = generateBinaryOperatorCodeFragment(loadFromMemory(lval.getRegister(), lval.getType()), expr, opm.get(op), p);
-        Variable v = new Variable(lval.getInfo(), lval.getRegister(), lval.getType());
-        code.appendCodeFragment(generateAssignCode(v, rval, p));
+        if (lval instanceof IndexationCodeFragment) {
+            CodeFragment rval = generateBinaryOperatorCodeFragment(loadIndexedVar((IndexationCodeFragment)lval, p), expr, opm.get(op), p);
+            code.appendCodeFragment(generateIndexAssignCode((IndexationCodeFragment) lval, rval, p));
+        } else {
+            CodeFragment rval = generateBinaryOperatorCodeFragment(loadFromMemory(lval.getRegister(), lval.getType()), expr, opm.get(op), p);
+            Variable v = new Variable(lval.getInfo(), lval.getRegister(), lval.getType());
+            code.appendCodeFragment(generateAssignCode(v, rval, p));
+        }
+
         return code;
     }
 
@@ -762,9 +830,15 @@ public class CompilerVisitor extends MagicBaseVisitor<CodeFragment> {
         } catch (UnknownVarException e) {
             lval = declVar(e.getId(), expr.getType(), new CodePosition(ctx));
         }
+
         code.addCode(lval);
-        Variable v = new Variable(lval.getInfo(), lval.getRegister(), lval.getType());
-        code.appendCodeFragment(generateAssignCode(v, expr, new CodePosition(ctx)));
+        if (lval instanceof IndexationCodeFragment) {
+            code.appendCodeFragment(generateIndexAssignCode((IndexationCodeFragment) lval, expr, new CodePosition(ctx)));
+        } else {
+            Variable v = new Variable(lval.getInfo(), lval.getRegister(), lval.getType());
+            code.appendCodeFragment(generateAssignCode(v, expr, new CodePosition(ctx)));
+        }
+
         return code;
     }
 
@@ -779,58 +853,26 @@ public class CompilerVisitor extends MagicBaseVisitor<CodeFragment> {
     }
 
     @Override public CodeFragment visitVarList(MagicParser.VarListContext ctx) {
-        CodeFragment var;
+        CodePosition p = new CodePosition(ctx);
+        CodeFragment var; //todo multipleindex
         try {
             var = visit(ctx.var());
         } catch (UnknownVarException e) {
-            throw new InvalidIndexationException(new CodePosition(ctx));
+            throw new InvalidIndexationException(p);
         }
+
+        IndexationCodeFragment code = new IndexationCodeFragment();
         CodeFragment index = visit(ctx.expression());
-
-        IterableType t = (IterableType) var.getType();
-        String register = generateNewRegister();
-
-        CodeFragment code = new CodeFragment();
-        code.addCode(var);
         code.addCode(index);
-        CodeFragment m = loadFromMemory(var.getRegister(), var.getType());
-        code.addCode(m);
+        code.setIndexType(index.getType());
+        code.setIndexRegister(index.getRegister());
 
-        String type_str = t.getSubtype().getCode();
-        String ftype = "Range";
-        if (t instanceof ListType) {
-            type_str+="*";
-            ftype = "List";
+        if (var instanceof IndexationCodeFragment) {
+            code.appendCodeFragment(loadIndexedVar((IndexationCodeFragment) var, p));
+        } else {
+            var.appendCodeFragment(loadFromMemory(var.getRegister(), var.getType()));
+            code.appendCodeFragment(var);
         }
-
-        ST template = new ST(
-            "<ret> = call <type> @get<ftype>Item<suffix>(<iterable_type> <iterable>, <index_type> <index>)\n"
-        );
-
-        template.add("ret", register);
-        template.add("type", type_str);
-        template.add("ftype", ftype);
-        template.add("suffix", getFunctionSuffix(t.getSubtype()));
-        template.add("iterable_type", m.getType().getCode());
-        template.add("iterable", m.getRegister());
-        template.add("index_type", index.getType().getCode());
-        template.add("index", index.getRegister());
-        code.addCode(template.render());
-
-        if (t instanceof RangeType) {
-            ST temp = new ST (
-                "<reg> = alloca <type>\n" +
-                "store <type> <ret>, <type>* <reg>\n"
-            );
-            temp.add("ret", register);
-            temp.add("type", type_str);
-            register = generateNewRegister();
-            temp.add("reg", register);
-            code.addCode(temp.render());
-        }
-
-        code.setRegister(register);
-        code.setType(t.getSubtype());
 
         return code;
     }
@@ -1165,7 +1207,9 @@ public class CompilerVisitor extends MagicBaseVisitor<CodeFragment> {
 
     @Override public CodeFragment visitFunc_call(MagicParser.Func_callContext ctx) {
         CodeFragment code = new CodeFragment();
-        Function f = getFunc(ctx.ID().getText());
+        String id = ctx.ID().getText();
+        Function f = getFunc(id, new CodePosition(ctx));
+
         ArgListCodeFragment params = (ArgListCodeFragment)visit(ctx.param_list());
         String register = generateNewRegister();
 
@@ -1210,7 +1254,6 @@ public class CompilerVisitor extends MagicBaseVisitor<CodeFragment> {
         String type_str = t.getSubtype().getCode();
         String ftype = "Range";
         if (t instanceof ListType) {
-            type_str+="*";
             ftype = "List";
         }
 
@@ -1230,9 +1273,6 @@ public class CompilerVisitor extends MagicBaseVisitor<CodeFragment> {
         code.setRegister(register);
         code.setType(t.getSubtype());
 
-        if (t instanceof ListType) {
-            code.appendCodeFragment(loadFromMemory(register, t.getSubtype()));
-        }
         return code;
     }
 
@@ -1250,47 +1290,31 @@ public class CompilerVisitor extends MagicBaseVisitor<CodeFragment> {
         String ireg = generateNewRegister();
         String vreg = var.getRegister();
 
-        String get_fname = "";
-        String size_fname = "";
-        String getCode = "";
+
+        String iterable_type_str = "List";
 
         IterableType t = (IterableType) expr.getType();
 
-        if (expr.getType() instanceof ListType) {
-            get_fname = "@getListItem"+getFunctionSuffix(t.getSubtype());
-            size_fname = "@sizeList"+getFunctionSuffix(t.getSubtype());
-            getCode =
-                "\\<<prefix>_vptr> = call \\<type>* \\<get_fname>(i8* \\<iterable>, i64 \\<<prefix>_ni>)\n" +
-                "\\<<prefix>_v> = load \\<type>* \\<<prefix>_vptr>\n";
-
-
-
-        } else if(expr.getType() instanceof RangeType) {
-            get_fname = "@getRangeItem"+getFunctionSuffix(t.getSubtype());
-            size_fname = "@sizeRange"+getFunctionSuffix(t.getSubtype());
-            getCode =
-                "\\<<prefix>_v> = call \\<type> \\<get_fname>(i8* \\<iterable>, i64 \\<<prefix>_ni>)\n";
+        if(expr.getType() instanceof RangeType) {
+            iterable_type_str = "Range";
         }
-
-        String initGetCode = new ST(getCode).add("prefix", "init").render();
-        String iterGetCode = new ST(getCode).add("prefix", "iter").render();
 
         ST template = new ST(
             "<expression_code>" +
             "<var_code>" +
-            "<init_size> = call i64 <size_fname>(i8* <iterable>)\n" +
+            "<init_size> = call i64 @size<iterable_type><suffix>(i8* <iterable>)\n" +
             "<init_cmp_register> = icmp slt i64 0, <init_size>\n" +
             "br i1 <init_cmp_register>, label %<init_label>, label %<end_label>\n" +
             "<init_label>:\n" +
             "<iptr> = alloca i64\n" +
             "<init_ni> = add i64 0, 0\n" +
             "store i64 <init_ni>, i64* <iptr>\n" +
-            initGetCode +
+            "<init_v> = call <type> @get<iterable_type>Item<suffix>(i8* <iterable>, i64 <init_ni>)\n" +
             "store <type> <init_v>, <type>* <varptr>\n" +
 
             "br label %<cmp_label>\n" +
             "<cmp_label>:\n" +
-            "<size> = call i64 <size_fname>(i8* <iterable>)\n" +
+            "<size> = call i64 @size<iterable_type><suffix>(i8* <iterable>)\n" +
             "<cmp_i> = load i64* <iptr>\n" +
             "<cmp_register> = icmp slt i64 <cmp_i>, <size>\n" +
 
@@ -1301,7 +1325,7 @@ public class CompilerVisitor extends MagicBaseVisitor<CodeFragment> {
             "<iter_i> = load i64* <iptr>\n" +
             "<iter_ni> = add i64 <iter_i>, 1\n" +
             "store i64 <iter_ni>, i64* <iptr>\n" +
-            iterGetCode +
+            "<iter_v> = call <type> @get<iterable_type>Item<suffix>(i8* <iterable>, i64 <iter_ni>)\n" +
             "store <type> <iter_v>, <type>* <varptr>\n" +
 
             "br label %<cmp_label>\n" +
@@ -1312,23 +1336,22 @@ public class CompilerVisitor extends MagicBaseVisitor<CodeFragment> {
         template.add("expression_code", expr);
         template.add("var_code", var);
 
+        template.add("iterable_type", iterable_type_str);
+        template.add("suffix", getFunctionSuffix(t.getSubtype()));
+
         template.add("init_ni", generateNewRegister());
         template.add("init_size", generateNewRegister());
         template.add("init_cmp_register", generateNewRegister());
         template.add("init_v", generateNewRegister());
-        template.add("init_vptr", generateNewRegister());
         template.add("size", generateNewRegister());
         template.add("cmp_i", generateNewRegister());
         template.add("iter_i", generateNewRegister());
         template.add("iter_ni", generateNewRegister());
         template.add("iter_v", generateNewRegister());
-        template.add("iter_vptr", generateNewRegister());
 
         template.add("iptr", ireg);
         template.add("varptr", vreg);
         template.add("iterable", expr.getRegister());
-        template.add("get_fname", get_fname);
-        template.add("size_fname", size_fname);
         template.add("type", t.getSubtype().getCode());
 
         template.add("cmp_register", generateNewRegister());
