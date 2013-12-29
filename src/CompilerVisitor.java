@@ -50,8 +50,6 @@ public class CompilerVisitor extends SimplangBaseVisitor<CodeFragment> {
         f = new Function("printFloat", "@printFloat", BasicType.FLOAT, p);
         libFunctions.add(f);
         declFunc("printFloat", f, cp);
-
-
     }
 
     private void addTable() {
@@ -197,7 +195,7 @@ public class CompilerVisitor extends SimplangBaseVisitor<CodeFragment> {
                         "%s = call %s @createList%s(%s %s)\n",
                         register,
                         t.getCode(),
-                        getListFunctionSuffix(lt.getSubtype()),
+                        getFunctionSuffix(lt.getSubtype()),
                         BasicType.INT.getCode(),
                         "1"
                     )
@@ -207,11 +205,22 @@ public class CompilerVisitor extends SimplangBaseVisitor<CodeFragment> {
                     String.format(
                         "call %s @setListItem%s(%s %s, %s %s, %s %s)\n",
                         "void",
-                        getListFunctionSuffix(lt.getSubtype()),
+                        getFunctionSuffix(lt.getSubtype()),
                         t.getCode(),
                         register,
                         BasicType.INT.getCode(),
                         "0",
+                        v.getType().getCode(),
+                        v.getRegister()
+                    )
+                );
+            } else if (v.getType() instanceof RangeType && ((RangeType)v.getType()).getSubtype().equals(lt.getSubtype())) {
+                code.addCode(
+                    String.format(
+                        "%s = call %s @createListFromRange%s(%s %s)\n",
+                        register,
+                        t.getCode(),
+                        getFunctionSuffix(lt.getSubtype()),
                         v.getType().getCode(),
                         v.getRegister()
                     )
@@ -279,11 +288,15 @@ public class CompilerVisitor extends SimplangBaseVisitor<CodeFragment> {
         return code;
     }
 
-    private String getListFunctionSuffix(Type t) {
+    private String getFunctionSuffix(Type t) {
         String listType = "Int";
         if (t.equals(BasicType.FLOAT)) {
             listType = "Float";
         }
+        if (t instanceof IterableType) {
+            listType = "Pointer";
+        }
+
         // System.err.println(t.toString() + " ->" + listType);
         return listType;
     }
@@ -352,22 +365,45 @@ public class CompilerVisitor extends SimplangBaseVisitor<CodeFragment> {
         return code;
     }
 
+    private String getListFunctions(Type t) {
+        String list_type = getFunctionSuffix(t);
+
+        ST list_functions = new ST(
+            "declare i8* @createList<list_type> (i64)\n" +
+            "declare void @setListItem<list_type> (i8*, i64, <type>)\n" +
+            "declare <type>* @getListItem<list_type> (i8*, i64)\n" +
+            "declare i8* @mergeLists<list_type> (i8*, i8*)\n" +
+            "declare i8* @multiplyList<list_type> (i8*, i64)\n" +
+            "declare i64 @sizeList<list_type> (i8*)\n"
+        );
+
+        list_functions.add("list_type", list_type);
+        list_functions.add("type", t.getCode());
+        return list_functions.render();
+    }
+
+    private String getRangeFunctions(Type t) {
+        String range_type = getFunctionSuffix(t);
+
+        ST list_functions = new ST(
+            "declare i8* @createListFromRange<range_type> (i8*)\n" +
+            "declare i8* @createRange<range_type> (<type>, <type>, <type>)\n" +
+            "declare <type> @getRangeItem<range_type> (i8*, i64)\n" +
+            "declare i64 @sizeRange<range_type> (i8*)\n"
+        );
+
+        list_functions.add("range_type", range_type);
+        list_functions.add("type", t.getCode());
+        return list_functions.render();
+    }
+
+
     @Override public CodeFragment visitInit(SimplangParser.InitContext ctx) {
-
-
         String base_functions =
-            "declare i8* @createListInt (i64)\n" +
-            "declare void @setListItemInt (i8*, i64, i64)\n" +
-            "declare i64* @getListItemInt (i8*, i64)\n" +
-            "declare i8* @mergeListsInt (i8*, i8*)\n" +
-            "declare i8* @multiplyListInt (i8*, i64)\n" +
-            "declare i64 @sizeListInt (i8*)\n" +
-            "declare i8* @createListFloat (i64)\n" +
-            "declare void @setListItemFloat (i8*, i64, double)\n" +
-            "declare double* @getListItemFloat (i8*, i64)\n" +
-            "declare i8* @mergeListsFloat (i8*, i8*)\n" +
-            "declare i8* @multiplyListFloat (i8*, i64)\n" +
-            "declare i64 @sizeListFloat (i8*)\n";
+            getListFunctions(BasicType.INT) +
+            getRangeFunctions(BasicType.INT) +
+            getListFunctions(BasicType.FLOAT) +
+            getListFunctions(new ListType(BasicType.NOTYPE));
 
         CodeFragment lib_functions = generateLibFunctions();
 
@@ -453,7 +489,7 @@ public class CompilerVisitor extends SimplangBaseVisitor<CodeFragment> {
                 "%s = call %s @createList%s(%s %s)\n",
                 register,
                 code.getType().getCode(),
-                getListFunctionSuffix(subtype),
+                getFunctionSuffix(subtype),
                 BasicType.INT.getCode(),
                 Integer.toString(value.getArgs().size())
             )
@@ -464,7 +500,7 @@ public class CompilerVisitor extends SimplangBaseVisitor<CodeFragment> {
                 String.format(
                     "call %s @setListItem%s(%s %s, %s %s, %s %s)\n",
                     "void",
-                    getListFunctionSuffix(subtype),
+                    getFunctionSuffix(subtype),
                     code.getType().getCode(),
                     register,
                     BasicType.INT.getCode(),
@@ -481,6 +517,51 @@ public class CompilerVisitor extends SimplangBaseVisitor<CodeFragment> {
         ArgListCodeFragment value = (ArgListCodeFragment) visit(ctx.list().param_list());
         Type subtype = value.getType();
         return generateListConstant(subtype, value);
+    }
+
+    private CodeFragment generateRangeConstant(Type subtype, CodeFragment start, CodeFragment end, CodeFragment jump) {
+        String register = generateNewRegister();
+        CodeFragment code = new CodeFragment();
+
+        Type rtype = new RangeType(subtype);
+
+        ST template = new ST (
+            "<start_code>" +
+            "<end_code>" +
+            "<jump_code>" +
+            "<reg> = call <rtype> @createRange<range_type>(<type> <start>, <type> <end>, <type> <jump>)\n"
+        );
+
+        template.add("reg", register);
+        template.add("rtype", rtype.getCode());
+        template.add("type", subtype.getCode());
+        template.add("start", start.getRegister());
+        template.add("end", end.getRegister());
+        template.add("jump", jump.getRegister());
+        template.add("start_code", start);
+        template.add("end_code", end);
+        template.add("jump_code", jump);
+        template.add("range_type", getFunctionSuffix(subtype));
+
+        code.addCode(template.render());
+        code.setType(rtype);
+        code.setRegister(register);
+
+        return code;
+    }
+
+    @Override public CodeFragment visitValRange(SimplangParser.ValRangeContext ctx) {
+        CodeFragment start = visit(ctx.range().expression(0));
+        CodeFragment end = visit(ctx.range().expression(1));
+        CodeFragment jump;
+        if (ctx.range().expression().size()>2) {
+            jump = visit(ctx.range().expression(2));
+        } else {
+            jump = generateConstant(start.getType(), "1");
+        }
+
+        Type subtype = start.getType();
+        return generateRangeConstant(subtype, start, end, jump);
     }
 
     @Override public CodeFragment visitStatement(SimplangParser.StatementContext ctx) {
@@ -593,12 +674,15 @@ public class CompilerVisitor extends SimplangBaseVisitor<CodeFragment> {
         Type type = var.getType();
 
         if (!value.getType().equals(type)) {
-            throw new TypeMismatchException(p, value.getType(), type);
+            Variable valvar = new Variable(value.getInfo(), value.getRegister(), value.getType());
+            value.appendCodeFragment(variableTypeConvert(valvar, type));
         }
+
 
         if (mem_register == null) {
             throw new UnknownVarException(p, var.getName());
         }
+
         ST template = new ST(
                 "<value_code>" +
                 "store <type> <value_register>, <type>* <mem_register>\n"
@@ -625,6 +709,14 @@ public class CompilerVisitor extends SimplangBaseVisitor<CodeFragment> {
         CodeFragment code = new CodeFragment();
         Type subtype = visit(ctx.type()).getType();
         code.setType(new ListType(subtype));
+        return code;
+    }
+
+    @Override public CodeFragment visitTypeRange(SimplangParser.TypeRangeContext ctx) {
+        CodeFragment code = new CodeFragment();
+        Type subtype = visit(ctx.type()).getType();
+        //todo chcek numeric type
+        code.setType(new RangeType(subtype));
         return code;
     }
 
@@ -662,7 +754,7 @@ public class CompilerVisitor extends SimplangBaseVisitor<CodeFragment> {
         }
         CodeFragment index = visit(ctx.expression());
 
-        ListType t = (ListType) var.getType();
+        IterableType t = (IterableType) var.getType();
         String register = generateNewRegister();
 
         CodeFragment code = new CodeFragment();
@@ -670,21 +762,43 @@ public class CompilerVisitor extends SimplangBaseVisitor<CodeFragment> {
         code.addCode(index);
         CodeFragment m = loadFromMemory(var.getRegister(), var.getType());
         code.addCode(m);
-        code.addCode(
-            String.format(
-                "%s = call %s* @getListItem%s(%s %s, %s %s)\n",
-                register,
-                t.getSubtype().getCode(),
-                getListFunctionSuffix(t.getSubtype()),
-                m.getType().getCode(),
-                m.getRegister(),
-                index.getType().getCode(),
-                index.getRegister()
-            )
+
+        String type_str = t.getSubtype().getCode();
+        String ftype = "Range";
+        if (t instanceof ListType) {
+            type_str+="*";
+            ftype = "List";
+        }
+
+        ST template = new ST(
+            "<ret> = call <type> @get<ftype>Item<suffix>(<iterable_type> <iterable>, <index_type> <index>)\n"
         );
+
+        template.add("ret", register);
+        template.add("type", type_str);
+        template.add("ftype", ftype);
+        template.add("suffix", getFunctionSuffix(t.getSubtype()));
+        template.add("iterable_type", m.getType().getCode());
+        template.add("iterable", m.getRegister());
+        template.add("index_type", index.getType().getCode());
+        template.add("index", index.getRegister());
+        code.addCode(template.render());
+
+        if (t instanceof RangeType) {
+            ST temp = new ST (
+                "<reg> = alloca <type>\n" +
+                "store <type> <ret>, <type>* <reg>\n"
+            );
+            temp.add("ret", register);
+            temp.add("type", type_str);
+            register = generateNewRegister();
+            temp.add("reg", register);
+            code.addCode(temp.render());
+        }
 
         code.setRegister(register);
         code.setType(t.getSubtype());
+
         return code;
     }
 
@@ -749,7 +863,7 @@ public class CompilerVisitor extends SimplangBaseVisitor<CodeFragment> {
 
                 code_stub =  String.format(
                     "<ret> = call <type> @mergeLists%s(<type> <left_val>, <type> <right_val>)\n",
-                    getListFunctionSuffix(((ListType) type).getSubtype())
+                    getFunctionSuffix(((ListType) type).getSubtype())
                 );
             }
 
@@ -772,7 +886,7 @@ public class CompilerVisitor extends SimplangBaseVisitor<CodeFragment> {
                         "\\<ret> = call <type> @multiplyList<lst_type>(<type> <lst>, <val_type> <val>)\n"
                     );
 
-                    tmp.add("lst_type", getListFunctionSuffix(((ListType) type).getSubtype()));
+                    tmp.add("lst_type", getFunctionSuffix(((ListType) type).getSubtype()));
                     tmp.add("lst", lst.getRegister());
                     tmp.add("val", val.getRegister());
                     tmp.add("type", lst.getType().getCode());
@@ -1053,26 +1167,39 @@ public class CompilerVisitor extends SimplangBaseVisitor<CodeFragment> {
         CodeFragment expr = visit(ctx.expression(0));
         CodeFragment index = visit(ctx.expression(1));
 
-        ListType t = (ListType) expr.getType();
+        IterableType t = (IterableType) expr.getType();
         String register = generateNewRegister();
 
         CodeFragment code = new CodeFragment();
         code.addCode(expr);
         code.addCode(index);
-        code.addCode(
-            String.format(
-                "%s = call %s* @getListItem%s(%s %s, %s %s)\n",
-                register,
-                t.getSubtype().getCode(),
-                getListFunctionSuffix(t.getSubtype()),
-                expr.getType().getCode(),
-                expr.getRegister(),
-                index.getType().getCode(),
-                index.getRegister()
-            )
+
+        String type_str = t.getSubtype().getCode();
+        String ftype = "Range";
+        if (t instanceof ListType) {
+            type_str+="*";
+            ftype = "List";
+        }
+
+        ST template = new ST(
+            "<ret> = call <type> @get<ftype>Item<suffix>(<iterable_type> <iterable>, <index_type> <index>)\n"
         );
 
-        code.appendCodeFragment(loadFromMemory(register, t.getSubtype()));
+        template.add("ret", register);
+        template.add("type", type_str);
+        template.add("ftype", ftype);
+        template.add("suffix", getFunctionSuffix(t.getSubtype()));
+        template.add("iterable_type", t.getCode());
+        template.add("iterable", expr.getRegister());
+        template.add("index_type", index.getType().getCode());
+        template.add("index", index.getRegister());
+        code.addCode(template.render());
+        code.setRegister(register);
+        code.setType(t.getSubtype());
+
+        if (t instanceof ListType) {
+            code.appendCodeFragment(loadFromMemory(register, t.getSubtype()));
+        }
         return code;
     }
 
@@ -1092,13 +1219,28 @@ public class CompilerVisitor extends SimplangBaseVisitor<CodeFragment> {
 
         String get_fname = "";
         String size_fname = "";
+        String getCode = "";
 
         IterableType t = (IterableType) expr.getType();
 
         if (expr.getType() instanceof ListType) {
-            get_fname = "@getListItem"+getListFunctionSuffix(t.getSubtype());
-            size_fname = "@sizeList"+getListFunctionSuffix(t.getSubtype());
+            get_fname = "@getListItem"+getFunctionSuffix(t.getSubtype());
+            size_fname = "@sizeList"+getFunctionSuffix(t.getSubtype());
+            getCode =
+                "\\<<prefix>_vptr> = call \\<type>* \\<get_fname>(i8* \\<iterable>, i64 \\<<prefix>_ni>)\n" +
+                "\\<<prefix>_v> = load \\<type>* \\<<prefix>_vptr>\n";
+
+
+
+        } else if(expr.getType() instanceof RangeType) {
+            get_fname = "@getRangeItem"+getFunctionSuffix(t.getSubtype());
+            size_fname = "@sizeRange"+getFunctionSuffix(t.getSubtype());
+            getCode =
+                "\\<<prefix>_v> = call \\<type> \\<get_fname>(i8* \\<iterable>, i64 \\<<prefix>_ni>)\n";
         }
+
+        String initGetCode = new ST(getCode).add("prefix", "init").render();
+        String iterGetCode = new ST(getCode).add("prefix", "iter").render();
 
         ST template = new ST(
             "<expression_code>" +
@@ -1106,8 +1248,7 @@ public class CompilerVisitor extends SimplangBaseVisitor<CodeFragment> {
             "<iptr> = alloca i64\n" +
             "<init_ni> = add i64 0, 0\n" +
             "store i64 <init_ni>, i64* <iptr>\n" +
-            "<init_vptr> = call <type>* <get_fname>(i8* <iterable>, i64 <init_ni>)\n" +
-            "<init_v> = load <type>* <init_vptr>\n" +
+            initGetCode +
             "store <type> <init_v>, <type>* <varptr>\n" +
 
             "br label %<cmp_label>\n" +
@@ -1120,11 +1261,10 @@ public class CompilerVisitor extends SimplangBaseVisitor<CodeFragment> {
             "<body_label>:\n" +
             "<body_code>" +
 
-            "<iter_i> = load i64* <iptr>" +
+            "<iter_i> = load i64* <iptr>\n" +
             "<iter_ni> = add i64 <iter_i>, 1\n" +
             "store i64 <iter_ni>, i64* <iptr>\n" +
-            "<iter_vptr> = call <type>* <get_fname>(i8* <iterable>, i64 <iter_ni>)\n" +
-            "<iter_v> = load <type>* <iter_vptr>\n" +
+            iterGetCode +
             "store <type> <iter_v>, <type>* <varptr>\n" +
 
             "br label %<cmp_label>\n" +
