@@ -54,8 +54,8 @@ public class IndentTokenSource implements TokenSource {
         Token t = stream.LT(1);
         stream.consume();
 
-        if ( t.getType()!=SimplangLexer.NL ) {
-            if (t.getType()!=SimplangLexer.LEADING_WS) {
+        if ( t.getType()!=MagicLexer.NL ) {
+            if (t.getType()!=MagicLexer.LEADING_WS) {
                 tokens.add(t);
             }
             return;
@@ -68,7 +68,7 @@ public class IndentTokenSource implements TokenSource {
         if (t.getType() == Token.EOF) {
              while (!identStack.empty()) {
                 identStack.pop();
-                tokens.add(tokenFactory.create(SimplangParser.DEDENT,"l=0"));
+                tokens.add(tokenFactory.create(MagicParser.DEDENT,"l=0"));
             }
             tokens.add(t);
             return;
@@ -77,7 +77,7 @@ public class IndentTokenSource implements TokenSource {
         stream.consume();
 
         String w = "";
-        if ( t.getType() == SimplangLexer.LEADING_WS ) {
+        if ( t.getType() == MagicLexer.LEADING_WS ) {
             w = t.getText();
         }
 
@@ -85,17 +85,17 @@ public class IndentTokenSource implements TokenSource {
 
         if (l>lastIndent) {
             identStack.push(l);
-            tokens.add(tokenFactory.create(SimplangParser.INDENT,"I:l="+identStack.size()+" s="+l));
+            tokens.add(tokenFactory.create(MagicParser.INDENT,"I:l="+identStack.size()+" s="+l));
             lastIndent = l;
         } else if (l < lastIndent) {
             while (!identStack.empty() && identStack.peek()>l) {
                 int cl = identStack.pop();
-                tokens.add(tokenFactory.create(SimplangParser.DEDENT,"D:l="+identStack.size()+" s="+cl));
+                tokens.add(tokenFactory.create(MagicParser.DEDENT,"D:l="+identStack.size()+" s="+cl));
             }
             lastIndent = l;
         }
 
-        if ( t.getType()!=SimplangLexer.LEADING_WS ) {
+        if ( t.getType()!=MagicLexer.LEADING_WS ) {
             tokens.add(t);
             return;
         }

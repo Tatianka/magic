@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.ArrayList;
 
 
-public class CompilerVisitor extends SimplangBaseVisitor<CodeFragment> {
+public class CompilerVisitor extends MagicBaseVisitor<CodeFragment> {
     LinkedList<Map<String, Variable>> variables = new LinkedList<Map<String, Variable>>();
     LinkedList<Map<String, Function>> functions = new LinkedList<Map<String, Function>>();
     HashSet<Function> libFunctions = new HashSet<Function>();
@@ -46,8 +46,13 @@ public class CompilerVisitor extends SimplangBaseVisitor<CodeFragment> {
         declFunc("printInt", f, cp);
 
         p = new ArrayList<Variable>();
+        f = new Function("readInt", "@readInt", BasicType.INT, p);
+        libFunctions.add(f);
+        declFunc("readInt", f, cp);
+
+        p = new ArrayList<Variable>();
         p.add(new Variable("a", "", BasicType.FLOAT));
-        f = new Function("printFloat", "@printFloat", BasicType.FLOAT, p);
+        f = new Function("printFloat", "@printFloat", BasicType.INT, p);
         libFunctions.add(f);
         declFunc("printFloat", f, cp);
     }
@@ -398,7 +403,7 @@ public class CompilerVisitor extends SimplangBaseVisitor<CodeFragment> {
     }
 
 
-    @Override public CodeFragment visitInit(SimplangParser.InitContext ctx) {
+    @Override public CodeFragment visitInit(MagicParser.InitContext ctx) {
         String base_functions =
             getListFunctions(BasicType.INT) +
             getRangeFunctions(BasicType.INT) +
@@ -409,7 +414,7 @@ public class CompilerVisitor extends SimplangBaseVisitor<CodeFragment> {
 
         CodeFragment body = new CodeFragment();
 
-        for(SimplangParser.StatementContext s: ctx.statement()) {
+        for(MagicParser.StatementContext s: ctx.statement()) {
             CodeFragment statement = visit(s);
             body.appendCodeFragment(statement);
         }
@@ -436,7 +441,7 @@ public class CompilerVisitor extends SimplangBaseVisitor<CodeFragment> {
         return code;
     }
 
-    @Override public CodeFragment visitValVar(SimplangParser.ValVarContext ctx) {
+    @Override public CodeFragment visitValVar(MagicParser.ValVarContext ctx) {
         CodeFragment v = visit(ctx.var());
         CodeFragment code = new CodeFragment();
         code.addCode(v);
@@ -458,11 +463,11 @@ public class CompilerVisitor extends SimplangBaseVisitor<CodeFragment> {
         return code;
     }
 
-    @Override public CodeFragment visitValInt(SimplangParser.ValIntContext ctx) {
+    @Override public CodeFragment visitValInt(MagicParser.ValIntContext ctx) {
         return generateConstant(BasicType.INT, ctx.INT().getText());
     }
 
-    @Override public CodeFragment visitValBool(SimplangParser.ValBoolContext ctx) {
+    @Override public CodeFragment visitValBool(MagicParser.ValBoolContext ctx) {
         String value = "1";
         if (ctx.BOOL().getText().equals("false")) {
             value = "0";
@@ -471,7 +476,7 @@ public class CompilerVisitor extends SimplangBaseVisitor<CodeFragment> {
         return generateConstant(BasicType.BOOL, value);
     }
 
-    @Override public CodeFragment visitValFloat(SimplangParser.ValFloatContext ctx) {
+    @Override public CodeFragment visitValFloat(MagicParser.ValFloatContext ctx) {
         String value = ctx.FLOAT().getText();
         return generateConstant(BasicType.FLOAT, value);
     }
@@ -513,7 +518,7 @@ public class CompilerVisitor extends SimplangBaseVisitor<CodeFragment> {
         return code;
     }
 
-    @Override public CodeFragment visitValList(SimplangParser.ValListContext ctx) {
+    @Override public CodeFragment visitValList(MagicParser.ValListContext ctx) {
         ArgListCodeFragment value = (ArgListCodeFragment) visit(ctx.list().param_list());
         Type subtype = value.getType();
         return generateListConstant(subtype, value);
@@ -550,7 +555,7 @@ public class CompilerVisitor extends SimplangBaseVisitor<CodeFragment> {
         return code;
     }
 
-    @Override public CodeFragment visitValRange(SimplangParser.ValRangeContext ctx) {
+    @Override public CodeFragment visitValRange(MagicParser.ValRangeContext ctx) {
         CodeFragment start = visit(ctx.range().expression(0));
         CodeFragment end = visit(ctx.range().expression(1));
         CodeFragment jump;
@@ -564,13 +569,13 @@ public class CompilerVisitor extends SimplangBaseVisitor<CodeFragment> {
         return generateRangeConstant(subtype, start, end, jump);
     }
 
-    @Override public CodeFragment visitStatement(SimplangParser.StatementContext ctx) {
-        SimplangParser.Simple_statementContext ss = ctx.simple_statement();
+    @Override public CodeFragment visitStatement(MagicParser.StatementContext ctx) {
+        MagicParser.Simple_statementContext ss = ctx.simple_statement();
         if (ss != null) {
             return visit(ss);
         }
 
-        SimplangParser.Block_statementContext bs = ctx.block_statement();
+        MagicParser.Block_statementContext bs = ctx.block_statement();
         if (bs != null) {
             return visit(bs);
         }
@@ -578,13 +583,13 @@ public class CompilerVisitor extends SimplangBaseVisitor<CodeFragment> {
         return new CodeFragment();
     }
 
-    @Override public CodeFragment visitVar_def(SimplangParser.Var_defContext ctx) {
+    @Override public CodeFragment visitVar_def(MagicParser.Var_defContext ctx) {
         CodeFragment code = new CodeFragment();
 
         Type type = visit(ctx.type()).getType();
         String id = ctx.ID().getText();
 
-        SimplangParser.ExpressionContext exp = ctx.expression();
+        MagicParser.ExpressionContext exp = ctx.expression();
 
         CodeFragment var_code = declVar(id, type, new CodePosition(ctx));
         code.addCode(var_code);
@@ -608,7 +613,7 @@ public class CompilerVisitor extends SimplangBaseVisitor<CodeFragment> {
         return code;
     }
 
-    @Override public CodeFragment visitFunc_def(SimplangParser.Func_defContext ctx) {
+    @Override public CodeFragment visitFunc_def(MagicParser.Func_defContext ctx) {
         CodeFragment code = new CodeFragment();
 
         Type rtype = visit(ctx.type()).getType();
@@ -631,7 +636,7 @@ public class CompilerVisitor extends SimplangBaseVisitor<CodeFragment> {
         return code;
     }
 
-    @Override public CodeFragment visitRet(SimplangParser.RetContext ctx) {
+    @Override public CodeFragment visitRet(MagicParser.RetContext ctx) {
         CodeFragment code;
         try {
             code = visit(ctx.expression());
@@ -643,7 +648,7 @@ public class CompilerVisitor extends SimplangBaseVisitor<CodeFragment> {
         return code;
     }
 
-    @Override public CodeFragment visitArglist(SimplangParser.ArglistContext ctx) {
+    @Override public CodeFragment visitArglist(MagicParser.ArglistContext ctx) {
         ArgListCodeFragment code = new ArgListCodeFragment();
         for (int i = 0; i< ctx.type().size(); i++) {
             Type t = visit(ctx.type(i)).getType();
@@ -699,20 +704,20 @@ public class CompilerVisitor extends SimplangBaseVisitor<CodeFragment> {
         return ret;
     }
 
-    @Override public CodeFragment visitTypeBasic(SimplangParser.TypeBasicContext ctx) {
+    @Override public CodeFragment visitTypeBasic(MagicParser.TypeBasicContext ctx) {
         CodeFragment code = new CodeFragment();
         code.setType(BasicType.fromString(ctx.getText()));
         return code;
     }
 
-    @Override public CodeFragment visitTypeList(SimplangParser.TypeListContext ctx) {
+    @Override public CodeFragment visitTypeList(MagicParser.TypeListContext ctx) {
         CodeFragment code = new CodeFragment();
         Type subtype = visit(ctx.type()).getType();
         code.setType(new ListType(subtype));
         return code;
     }
 
-    @Override public CodeFragment visitTypeRange(SimplangParser.TypeRangeContext ctx) {
+    @Override public CodeFragment visitTypeRange(MagicParser.TypeRangeContext ctx) {
         CodeFragment code = new CodeFragment();
         Type subtype = visit(ctx.type()).getType();
         //todo chcek numeric type
@@ -720,7 +725,7 @@ public class CompilerVisitor extends SimplangBaseVisitor<CodeFragment> {
         return code;
     }
 
-    @Override public CodeFragment visitComplex_assignment(SimplangParser.Complex_assignmentContext ctx) {
+    @Override public CodeFragment visitComplex_assignment(MagicParser.Complex_assignmentContext ctx) {
         CodePosition p = new CodePosition(ctx);
         CodeFragment code = new CodeFragment();
         CodeFragment expr = visit(ctx.expression());
@@ -733,13 +738,13 @@ public class CompilerVisitor extends SimplangBaseVisitor<CodeFragment> {
         code.addCode(lval);
 
         Map<Integer, Integer> opm = new HashMap<Integer, Integer>();
-        opm.put(SimplangParser.ADD_ASSIGN, SimplangParser.ADD);
-        opm.put(SimplangParser.SUB_ASSIGN, SimplangParser.SUB);
-        opm.put(SimplangParser.MUL_ASSIGN, SimplangParser.MUL);
-        opm.put(SimplangParser.DIV_ASSIGN, SimplangParser.DIV);
-        opm.put(SimplangParser.IDIV_ASSIGN, SimplangParser.IDIV);
-        opm.put(SimplangParser.REM_ASSIGN, SimplangParser.REM);
-        opm.put(SimplangParser.EXP_ASSIGN, SimplangParser.EXP);
+        opm.put(MagicParser.ADD_ASSIGN, MagicParser.ADD);
+        opm.put(MagicParser.SUB_ASSIGN, MagicParser.SUB);
+        opm.put(MagicParser.MUL_ASSIGN, MagicParser.MUL);
+        opm.put(MagicParser.DIV_ASSIGN, MagicParser.DIV);
+        opm.put(MagicParser.IDIV_ASSIGN, MagicParser.IDIV);
+        opm.put(MagicParser.REM_ASSIGN, MagicParser.REM);
+        opm.put(MagicParser.EXP_ASSIGN, MagicParser.EXP);
         int op = ctx.op.getType();
 
         CodeFragment rval = generateBinaryOperatorCodeFragment(loadFromMemory(lval.getRegister(), lval.getType()), expr, opm.get(op), p);
@@ -748,7 +753,7 @@ public class CompilerVisitor extends SimplangBaseVisitor<CodeFragment> {
         return code;
     }
 
-    @Override public CodeFragment visitSimple_assignment(SimplangParser.Simple_assignmentContext ctx) {
+    @Override public CodeFragment visitSimple_assignment(MagicParser.Simple_assignmentContext ctx) {
         CodeFragment code = new CodeFragment();
         CodeFragment expr = visit(ctx.expression());
         CodeFragment lval;
@@ -763,7 +768,7 @@ public class CompilerVisitor extends SimplangBaseVisitor<CodeFragment> {
         return code;
     }
 
-    @Override public CodeFragment visitVarID(SimplangParser.VarIDContext ctx) {
+    @Override public CodeFragment visitVarID(MagicParser.VarIDContext ctx) {
         CodeFragment code = new CodeFragment();
         String id = ctx.ID().getText();
         Variable var = getVar(id, new CodePosition(ctx));
@@ -773,7 +778,7 @@ public class CompilerVisitor extends SimplangBaseVisitor<CodeFragment> {
         return code;
     }
 
-    @Override public CodeFragment visitVarList(SimplangParser.VarListContext ctx) {
+    @Override public CodeFragment visitVarList(MagicParser.VarListContext ctx) {
         CodeFragment var;
         try {
             var = visit(ctx.var());
@@ -838,32 +843,32 @@ public class CompilerVisitor extends SimplangBaseVisitor<CodeFragment> {
         HashSet<Integer> boolOperators = new HashSet<Integer>();
         HashSet<Integer> cmpOperators = new HashSet<Integer>();
 
-        m.put(SimplangParser.ADD, new Pair<String, String>("add", "fadd"));
-        m.put(SimplangParser.SUB, new Pair<String, String>("sub", "fsub"));
-        m.put(SimplangParser.MUL, new Pair<String, String>("mul", "fmul"));
-        m.put(SimplangParser.DIV, new Pair<String, String>("sdiv", "fdiv"));
-        m.put(SimplangParser.REM, new Pair<String, String>("srem" , "frem" ));
+        m.put(MagicParser.ADD, new Pair<String, String>("add", "fadd"));
+        m.put(MagicParser.SUB, new Pair<String, String>("sub", "fsub"));
+        m.put(MagicParser.MUL, new Pair<String, String>("mul", "fmul"));
+        m.put(MagicParser.DIV, new Pair<String, String>("sdiv", "fdiv"));
+        m.put(MagicParser.REM, new Pair<String, String>("srem" , "frem" ));
 
-        m.put(SimplangParser.AND, new Pair<String, String>("and" , "and" ));
-        boolOperators.add(SimplangParser.AND);
-        m.put(SimplangParser.OR, new Pair<String, String>("or" , "or" ));
-        boolOperators.add(SimplangParser.OR);
+        m.put(MagicParser.AND, new Pair<String, String>("and" , "and" ));
+        boolOperators.add(MagicParser.AND);
+        m.put(MagicParser.OR, new Pair<String, String>("or" , "or" ));
+        boolOperators.add(MagicParser.OR);
 
-        m.put(SimplangParser.EQ, new Pair<String, String>("icmp eq" , "fcmp eq" ));
-        cmpOperators.add(SimplangParser.EQ);
-        m.put(SimplangParser.NE, new Pair<String, String>("icmp ne" , "fcmp ne" ));
-        cmpOperators.add(SimplangParser.NE);
-        m.put(SimplangParser.LE, new Pair<String, String>("icmp sle" , "fcmp sle" ));
-        cmpOperators.add(SimplangParser.LE);
-        m.put(SimplangParser.GE, new Pair<String, String>("icmp sge" , "fcmp sge" ));
-        cmpOperators.add(SimplangParser.GE);
-        m.put(SimplangParser.GT, new Pair<String, String>("icmp sgt" , "fcmp sgt" ));
-        cmpOperators.add(SimplangParser.GT);
-        m.put(SimplangParser.LT, new Pair<String, String>("icmp slt" , "fcmp slt" ));
-        cmpOperators.add(SimplangParser.LT);
+        m.put(MagicParser.EQ, new Pair<String, String>("icmp eq" , "fcmp eq" ));
+        cmpOperators.add(MagicParser.EQ);
+        m.put(MagicParser.NE, new Pair<String, String>("icmp ne" , "fcmp ne" ));
+        cmpOperators.add(MagicParser.NE);
+        m.put(MagicParser.LE, new Pair<String, String>("icmp sle" , "fcmp sle" ));
+        cmpOperators.add(MagicParser.LE);
+        m.put(MagicParser.GE, new Pair<String, String>("icmp sge" , "fcmp sge" ));
+        cmpOperators.add(MagicParser.GE);
+        m.put(MagicParser.GT, new Pair<String, String>("icmp sgt" , "fcmp sgt" ));
+        cmpOperators.add(MagicParser.GT);
+        m.put(MagicParser.LT, new Pair<String, String>("icmp slt" , "fcmp slt" ));
+        cmpOperators.add(MagicParser.LT);
 
 
-            // case SimplangParser.EXP:
+            // case MagicParser.EXP:
         //         instruction = "@iexp";
         //         code_stub = "<ret> = call i32 <instruction>(i32 <left_val>, i32 <right_val>)\n";
         //         break;
@@ -872,7 +877,7 @@ public class CompilerVisitor extends SimplangBaseVisitor<CodeFragment> {
         String instruction = "";
 
         if (left.getType() instanceof ListType || right.getType() instanceof ListType) {
-            if (operator == SimplangParser.ADD) {
+            if (operator == MagicParser.ADD) {
                 if (!left.getType().equals(right.getType())) {
                     Type t = getCommonType(left.getType(), right.getType());
 
@@ -895,7 +900,7 @@ public class CompilerVisitor extends SimplangBaseVisitor<CodeFragment> {
                 );
             }
 
-            if (operator == SimplangParser.MUL) {
+            if (operator == MagicParser.MUL) {
                 CodeFragment lst;
                 CodeFragment val;
                 if (left.getType() instanceof ListType) {
@@ -1000,7 +1005,7 @@ public class CompilerVisitor extends SimplangBaseVisitor<CodeFragment> {
         return ret;
     }
 
-    @Override public CodeFragment visitMul(SimplangParser.MulContext ctx) {
+    @Override public CodeFragment visitMul(MagicParser.MulContext ctx) {
         return generateBinaryOperatorCodeFragment(
             visit(ctx.expression(0)),
             visit(ctx.expression(1)),
@@ -1009,7 +1014,7 @@ public class CompilerVisitor extends SimplangBaseVisitor<CodeFragment> {
         );
     }
 
-    @Override public CodeFragment visitAdd(SimplangParser.AddContext ctx) {
+    @Override public CodeFragment visitAdd(MagicParser.AddContext ctx) {
         return generateBinaryOperatorCodeFragment(
             visit(ctx.expression(0)),
             visit(ctx.expression(1)),
@@ -1018,7 +1023,7 @@ public class CompilerVisitor extends SimplangBaseVisitor<CodeFragment> {
         );
     }
 
-    @Override public CodeFragment visitBoolAnd(SimplangParser.BoolAndContext ctx) {
+    @Override public CodeFragment visitBoolAnd(MagicParser.BoolAndContext ctx) {
         return generateBinaryOperatorCodeFragment(
             visit(ctx.expression(0)),
             visit(ctx.expression(1)),
@@ -1027,7 +1032,7 @@ public class CompilerVisitor extends SimplangBaseVisitor<CodeFragment> {
         );
     }
 
-    @Override public CodeFragment visitBoolOr(SimplangParser.BoolOrContext ctx) {
+    @Override public CodeFragment visitBoolOr(MagicParser.BoolOrContext ctx) {
         return generateBinaryOperatorCodeFragment(
             visit(ctx.expression(0)),
             visit(ctx.expression(1)),
@@ -1036,7 +1041,7 @@ public class CompilerVisitor extends SimplangBaseVisitor<CodeFragment> {
         );
     }
 
-    @Override public CodeFragment visitCompare(SimplangParser.CompareContext ctx) {
+    @Override public CodeFragment visitCompare(MagicParser.CompareContext ctx) {
         return generateBinaryOperatorCodeFragment(
             visit(ctx.expression(0)),
             visit(ctx.expression(1)),
@@ -1045,10 +1050,10 @@ public class CompilerVisitor extends SimplangBaseVisitor<CodeFragment> {
         );
     }
 
-    @Override public CodeFragment visitBlock(SimplangParser.BlockContext ctx) {
+    @Override public CodeFragment visitBlock(MagicParser.BlockContext ctx) {
         CodeFragment body = new CodeFragment();
         addTable();
-        for(SimplangParser.StatementContext s: ctx.statement()) {
+        for(MagicParser.StatementContext s: ctx.statement()) {
             CodeFragment statement = visit(s);
             body.appendCodeFragment(statement);
         }
@@ -1056,7 +1061,7 @@ public class CompilerVisitor extends SimplangBaseVisitor<CodeFragment> {
         return body;
     }
 
-    @Override public CodeFragment visitIf_statement(SimplangParser.If_statementContext ctx) {
+    @Override public CodeFragment visitIf_statement(MagicParser.If_statementContext ctx) {
         CodeFragment code = new CodeFragment();
 
         String endBlockLabel = this.generateNewLabel();
@@ -1121,7 +1126,7 @@ public class CompilerVisitor extends SimplangBaseVisitor<CodeFragment> {
         return code;
     }
 
-    @Override public CodeFragment visitWhile_statement(SimplangParser.While_statementContext ctx) {
+    @Override public CodeFragment visitWhile_statement(MagicParser.While_statementContext ctx) {
         CodeFragment expression = visit(ctx.expression());
         Variable v = new Variable(expression.getInfo(), expression.getRegister(), expression.getType());
         expression.appendCodeFragment(variableToBool(v));
@@ -1158,7 +1163,7 @@ public class CompilerVisitor extends SimplangBaseVisitor<CodeFragment> {
         return ret;
     }
 
-    @Override public CodeFragment visitFunc_call(SimplangParser.Func_callContext ctx) {
+    @Override public CodeFragment visitFunc_call(MagicParser.Func_callContext ctx) {
         CodeFragment code = new CodeFragment();
         Function f = getFunc(ctx.ID().getText());
         ArgListCodeFragment params = (ArgListCodeFragment)visit(ctx.param_list());
@@ -1180,10 +1185,10 @@ public class CompilerVisitor extends SimplangBaseVisitor<CodeFragment> {
         return code;
     }
 
-    @Override public CodeFragment visitParam_list(SimplangParser.Param_listContext ctx) {
+    @Override public CodeFragment visitParam_list(MagicParser.Param_listContext ctx) {
         ArgListCodeFragment code = new ArgListCodeFragment();
         code.setType(BasicType.INT);
-        for (SimplangParser.ExpressionContext e: ctx.expression()) {
+        for (MagicParser.ExpressionContext e: ctx.expression()) {
             CodeFragment expr_code = visit(e);
             code.appendCodeFragment(expr_code);
             code.addArg(new Variable(expr_code.getInfo(), expr_code.getRegister(), expr_code.getType()));
@@ -1191,7 +1196,7 @@ public class CompilerVisitor extends SimplangBaseVisitor<CodeFragment> {
         return (CodeFragment)code;
     }
 
-    @Override public CodeFragment visitIndex(SimplangParser.IndexContext ctx) {
+    @Override public CodeFragment visitIndex(MagicParser.IndexContext ctx) {
         CodeFragment expr = visit(ctx.expression(0));
         CodeFragment index = visit(ctx.expression(1));
 
@@ -1231,11 +1236,11 @@ public class CompilerVisitor extends SimplangBaseVisitor<CodeFragment> {
         return code;
     }
 
-    @Override public CodeFragment visitParen(SimplangParser.ParenContext ctx) {
+    @Override public CodeFragment visitParen(MagicParser.ParenContext ctx) {
         return visit(ctx.expression());
     }
 
-    @Override public CodeFragment visitFor_statement(SimplangParser.For_statementContext ctx) {
+    @Override public CodeFragment visitFor_statement(MagicParser.For_statementContext ctx) {
         addTable();
         CodeFragment expr = visit(ctx.expression());
         CodeFragment var = declVar(ctx.ID().getText(), ((IterableType)expr.getType()).getSubtype(), new CodePosition(ctx));

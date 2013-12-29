@@ -1,5 +1,6 @@
 #include <vector>
 #include <iostream>
+#include <cstdio>
 
 using namespace std;
 
@@ -37,6 +38,14 @@ LL print(T v) {
 }
 
 template <class T>
+T read() {
+    T v;
+    cin >> v;
+    return v;
+}
+
+
+template <class T>
 vector<T>* createList(LL size) {
     vector<T>* v = new vector<T>(size);
     return v;
@@ -50,7 +59,6 @@ vector<T>* createListFromRange(Range<T>* range) {
     }
     return v;
 }
-
 
 template <class T>
 T* getListItem(vector<T> *list, LL index) {
@@ -95,6 +103,10 @@ LL printInt(LL a) {
     return print(a);
 }
 
+LL readInt() {
+    return read<LL>();
+}
+
 long long iexp(long long a, long long b) {
     long long ret = 1;
     for (long long i = 0; i < b; i++) {
@@ -102,8 +114,6 @@ long long iexp(long long a, long long b) {
     }
     return ret;
 }
-
-
 
 //--Int------------------
 void* createListInt(LL size) {

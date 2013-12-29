@@ -1,4 +1,4 @@
-grammar Simplang;
+grammar Magic;
 
 tokens {
   INDENT,

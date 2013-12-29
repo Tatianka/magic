@@ -1,7 +1,8 @@
+#!/bin/bash
 cd grammar
 make
 cd -
 make
 cd lib
-g++ -shared -fPIC library.cpp -o libsimlang.so
+g++ -shared -fPIC libmagic.cpp -o libmagic.so
 
