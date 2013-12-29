@@ -720,19 +720,47 @@ public class CompilerVisitor extends SimplangBaseVisitor<CodeFragment> {
         return code;
     }
 
+    @Override public CodeFragment visitComplex_assignment(SimplangParser.Complex_assignmentContext ctx) {
+        CodePosition p = new CodePosition(ctx);
+        CodeFragment code = new CodeFragment();
+        CodeFragment expr = visit(ctx.expression());
+        CodeFragment lval;
+        try {
+            lval = visit(ctx.var());
+        } catch (UnknownVarException e) {
+            lval = declVar(e.getId(), expr.getType(), new CodePosition(ctx));
+        }
+        code.addCode(lval);
+
+        Map<Integer, Integer> opm = new HashMap<Integer, Integer>();
+        opm.put(SimplangParser.ADD_ASSIGN, SimplangParser.ADD);
+        opm.put(SimplangParser.SUB_ASSIGN, SimplangParser.SUB);
+        opm.put(SimplangParser.MUL_ASSIGN, SimplangParser.MUL);
+        opm.put(SimplangParser.DIV_ASSIGN, SimplangParser.DIV);
+        opm.put(SimplangParser.IDIV_ASSIGN, SimplangParser.IDIV);
+        opm.put(SimplangParser.REM_ASSIGN, SimplangParser.REM);
+        opm.put(SimplangParser.EXP_ASSIGN, SimplangParser.EXP);
+        int op = ctx.op.getType();
+
+        CodeFragment rval = generateBinaryOperatorCodeFragment(loadFromMemory(lval.getRegister(), lval.getType()), expr, opm.get(op), p);
+        Variable v = new Variable(lval.getInfo(), lval.getRegister(), lval.getType());
+        code.appendCodeFragment(generateAssignCode(v, rval, p));
+        return code;
+    }
+
     @Override public CodeFragment visitSimple_assignment(SimplangParser.Simple_assignmentContext ctx) {
-            CodeFragment code = new CodeFragment();
-            CodeFragment expr = visit(ctx.expression());
-            CodeFragment lval;
-            try {
-                lval = visit(ctx.var());
-            } catch (UnknownVarException e) {
-                lval = declVar(e.getId(), expr.getType(), new CodePosition(ctx));
-            }
-            code.addCode(lval);
-            Variable v = new Variable(lval.getInfo(), lval.getRegister(), lval.getType());
-            code.appendCodeFragment(generateAssignCode(v, expr, new CodePosition(ctx)));
-            return code;
+        CodeFragment code = new CodeFragment();
+        CodeFragment expr = visit(ctx.expression());
+        CodeFragment lval;
+        try {
+            lval = visit(ctx.var());
+        } catch (UnknownVarException e) {
+            lval = declVar(e.getId(), expr.getType(), new CodePosition(ctx));
+        }
+        code.addCode(lval);
+        Variable v = new Variable(lval.getInfo(), lval.getRegister(), lval.getType());
+        code.appendCodeFragment(generateAssignCode(v, expr, new CodePosition(ctx)));
+        return code;
     }
 
     @Override public CodeFragment visitVarID(SimplangParser.VarIDContext ctx) {
@@ -1245,6 +1273,10 @@ public class CompilerVisitor extends SimplangBaseVisitor<CodeFragment> {
         ST template = new ST(
             "<expression_code>" +
             "<var_code>" +
+            "<init_size> = call i64 <size_fname>(i8* <iterable>)\n" +
+            "<init_cmp_register> = icmp slt i64 0, <init_size>\n" +
+            "br i1 <init_cmp_register>, label %<init_label>, label %<end_label>\n" +
+            "<init_label>:\n" +
             "<iptr> = alloca i64\n" +
             "<init_ni> = add i64 0, 0\n" +
             "store i64 <init_ni>, i64* <iptr>\n" +
@@ -1276,6 +1308,8 @@ public class CompilerVisitor extends SimplangBaseVisitor<CodeFragment> {
         template.add("var_code", var);
 
         template.add("init_ni", generateNewRegister());
+        template.add("init_size", generateNewRegister());
+        template.add("init_cmp_register", generateNewRegister());
         template.add("init_v", generateNewRegister());
         template.add("init_vptr", generateNewRegister());
         template.add("size", generateNewRegister());
@@ -1294,6 +1328,7 @@ public class CompilerVisitor extends SimplangBaseVisitor<CodeFragment> {
 
         template.add("cmp_register", generateNewRegister());
 
+        template.add("init_label", generateNewLabel());
         template.add("cmp_label", generateNewLabel());
         template.add("body_label", generateNewLabel());
         template.add("end_label", generateNewLabel());

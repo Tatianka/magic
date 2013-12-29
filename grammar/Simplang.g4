@@ -54,15 +54,16 @@ simple_assignment: var '=' expression;
 
 complex_assignment
     : var op = (
-          '+='
-        | '-='
-        | '*='
-        | '/='
-        | '//='
-        | '%='
-        | '&='
-        | '|='
-        | '~='
+          ADD_ASSIGN
+        | SUB_ASSIGN
+        | MUL_ASSIGN
+        | DIV_ASSIGN
+        | IDIV_ASSIGN
+        | REM_ASSIGN
+        | EXP_ASSIGN
+        | AND_ASSIGN
+        | OR_ASSIGN
+        | NOT_ASSIGN
         ) expression;
 
 assignment : simple_assignment | complex_assignment;
@@ -146,13 +147,24 @@ AND : '&&' | 'and';
 OR : '||' | 'or';
 NOT : '!' | 'not';
 
+ADD: '+';
+SUB: '-';
 MUL: '*';
 DIV: '/';
 IDIV: '//';
 REM: '%';
-ADD: '+';
-SUB: '-';
 EXP: '^';
+
+ADD_ASSIGN:'+=';
+SUB_ASSIGN:'-=';
+MUL_ASSIGN:'*=';
+DIV_ASSIGN:'/=';
+IDIV_ASSIGN:'//=';
+REM_ASSIGN:'%=';
+EXP_ASSIGN:'^=';
+AND_ASSIGN:'&=';
+OR_ASSIGN:'|=';
+NOT_ASSIGN:'~=';
 
 EQ: '==';
 NE: '!=';
