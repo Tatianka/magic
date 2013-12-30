@@ -37,6 +37,10 @@ public enum BasicType implements Type {
             return FLOAT;
         }
 
+        if (t.equals("string")) {
+            return new ListType(BasicType.CHAR);
+        }
+
         // if (t.equals("void")) {
         //     return VOID;
         // }

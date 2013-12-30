@@ -232,6 +232,13 @@ LL printChar(char a) {
     return print(a);
 }
 
+LL printString(vector<char>* list) {
+    for (int i = 0; i<list->size(); i++) {
+        cout << (*list)[i];
+    }
+    cout << endl;
+}
+
 void* createListChar(LL size) {
     return (void*) createList<char>(size);
 }

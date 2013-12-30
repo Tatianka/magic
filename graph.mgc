@@ -9,14 +9,14 @@ int dfs(int v, int[][] p, bool[] visited)
 n = readInt()
 m = readInt()
 
-v = [[]]*n #ZLE
+v = [[]]*n # pozor toto vyrobi n rovnakych pointorv na jeden list
 
 for i in [0:m]
     a = readInt()
     b = readInt()
 
-    v[a] += b
-    v[b] += a
+    v[a] += b # pozor toto replacne cely podlist
+    v[b] += a # pozor toto replacne cely podlist
 
 visited = [false]*n
 
@@ -27,4 +27,7 @@ for i in [0:n]
         components += 1
         dfs(i, v, visited)
 
-printInt(components)
+if components <= 1
+    printString("YES")
+else
+    printString("NO")

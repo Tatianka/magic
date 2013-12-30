@@ -10,3 +10,11 @@ c = 'a'
 printChar(c)
 printInt(iexp(10, 3))
 printFloat(sqrt(100))
+d = "abcdefgh"
+printString(d)
+
+g = []
+int x = 'a'
+g += x
+for i in g
+    printChar(i)

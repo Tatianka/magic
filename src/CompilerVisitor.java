@@ -60,6 +60,12 @@ public class CompilerVisitor extends MagicBaseVisitor<CodeFragment> {
         f = new Function("printChar", "@printChar", BasicType.INT, p);
         libFunctions.add(f);
         declFunc("printChar", f, cp);
+
+        p = new ArrayList<Variable>();
+        p.add(new Variable("a", "", new ListType(BasicType.CHAR)));
+        f = new Function("printString", "@printString", BasicType.INT, p);
+        libFunctions.add(f);
+        declFunc("printString", f, cp);
     }
 
     private void addTable() {
@@ -188,7 +194,7 @@ public class CompilerVisitor extends MagicBaseVisitor<CodeFragment> {
         return t1;
     }
 
-    private CodeFragment variableTypeConvert(Variable v, Type t) {
+    private CodeFragment variableTypeConvert(Variable v, Type t, CodePosition p) {
         CodeFragment code = new CodeFragment();
         if (v.getType().equals(t)) {
             code.setType(t);
@@ -239,10 +245,16 @@ public class CompilerVisitor extends MagicBaseVisitor<CodeFragment> {
                 );
             }
         } else {
-            if (v.getType() == BasicType.BOOL && t == BasicType.INT) {
-                instruction = "zext";
-            } else {
+            if (v.getType().isInteger() && t.isInteger()) {
+                if (Integer.parseInt(v.getType().getCode().substring(1)) <= Integer.parseInt(t.getCode().substring(1))) {
+                    instruction = "sext";
+                } else {
+                    instruction = "trunc";
+                }
+            } else if (v.getType().isInteger()) {
                 instruction = "sitofp";
+            } else {
+                throw new TypeMismatchException(p, v.getType(), t);
             }
 
             ST temp = new ST(
@@ -587,6 +599,22 @@ public class CompilerVisitor extends MagicBaseVisitor<CodeFragment> {
         return generateListConstant(subtype, value);
     }
 
+    @Override public CodeFragment visitValString(MagicParser.ValStringContext ctx) {
+        String value = ctx.STRING().getText();
+        value = value.substring(1, value.length()-1);
+
+        ArgListCodeFragment code = new ArgListCodeFragment();
+        Type subtype = BasicType.CHAR;
+        code.setType(subtype);
+        for ( int i = 0; i< value.length(); i++ ) {
+            char ch = value.charAt(i);
+            code.appendCodeFragment(generateConstant(subtype, Integer.toString((int)ch)));
+            code.addArg(new Variable(code.getInfo(), code.getRegister(), code.getType()));
+        }
+
+        return generateListConstant(subtype, code);
+    }
+
     private CodeFragment generateRangeConstant(Type subtype, CodeFragment start, CodeFragment end, CodeFragment jump) {
         String register = generateNewRegister();
         CodeFragment code = new CodeFragment();
@@ -773,7 +801,7 @@ public class CompilerVisitor extends MagicBaseVisitor<CodeFragment> {
 
         if (!value.getType().equals(type)) {
             Variable valvar = new Variable(value.getInfo(), value.getRegister(), value.getType());
-            value.appendCodeFragment(variableTypeConvert(valvar, type));
+            value.appendCodeFragment(variableTypeConvert(valvar, type, p));
         }
 
         ST template = new ST(
@@ -801,7 +829,7 @@ public class CompilerVisitor extends MagicBaseVisitor<CodeFragment> {
 
         if (!value.getType().equals(type)) {
              Variable valvar = new Variable(value.getInfo(), value.getRegister(), value.getType());
-             value.appendCodeFragment(variableTypeConvert(valvar, type));
+             value.appendCodeFragment(variableTypeConvert(valvar, type, p));
         }
 
         ST template = new ST(
@@ -976,10 +1004,10 @@ public class CompilerVisitor extends MagicBaseVisitor<CodeFragment> {
 
                     if (t != BasicType.NOTYPE) {
                         Variable v = new Variable(left.getInfo(), left.getRegister(), left.getType());
-                        left.appendCodeFragment(variableTypeConvert(v, t));
+                        left.appendCodeFragment(variableTypeConvert(v, t, p));
 
                         Variable v2 = new Variable(right.getInfo(), right.getRegister(), right.getType());
-                        right.appendCodeFragment(variableTypeConvert(v2, t));
+                        right.appendCodeFragment(variableTypeConvert(v2, t, p));
 
                         type = t;
                     } else {
@@ -1006,7 +1034,7 @@ public class CompilerVisitor extends MagicBaseVisitor<CodeFragment> {
 
                 if (val.getType().isInteger()) {
                     Variable v = new Variable(val.getInfo(), val.getRegister(), val.getType());
-                    val.appendCodeFragment(variableTypeConvert(v, BasicType.INT));
+                    val.appendCodeFragment(variableTypeConvert(v, BasicType.INT, p));
 
                     ST tmp = new ST(
                         "\\<ret> = call <type> @multiplyList<lst_type>(<type> <lst>, <val_type> <val>)\n"
@@ -1028,10 +1056,10 @@ public class CompilerVisitor extends MagicBaseVisitor<CodeFragment> {
                 Type t = getCommonType(left.getType(), right.getType());
                 if (t != BasicType.NOTYPE) {
                     Variable v = new Variable(left.getInfo(), left.getRegister(), left.getType());
-                    left.appendCodeFragment(variableTypeConvert(v, t));
+                    left.appendCodeFragment(variableTypeConvert(v, t, p));
 
                     Variable v2 = new Variable(right.getInfo(), right.getRegister(), right.getType());
-                    right.appendCodeFragment(variableTypeConvert(v2, t));
+                    right.appendCodeFragment(variableTypeConvert(v2, t, p));
 
                     type = t;
                 } else {
@@ -1052,10 +1080,10 @@ public class CompilerVisitor extends MagicBaseVisitor<CodeFragment> {
             } else {
                 if (type == BasicType.BOOL) {
                     Variable v = new Variable(left.getInfo(), left.getRegister(), left.getType());
-                    left.appendCodeFragment(variableTypeConvert(v, BasicType.INT));
+                    left.appendCodeFragment(variableTypeConvert(v, BasicType.INT, p));
 
                     Variable v2 = new Variable(right.getInfo(), right.getRegister(), right.getType());
-                    right.appendCodeFragment(variableTypeConvert(v2, BasicType.INT));
+                    right.appendCodeFragment(variableTypeConvert(v2, BasicType.INT, p));
 
                     type = BasicType.INT;
                 }
@@ -1256,24 +1284,25 @@ public class CompilerVisitor extends MagicBaseVisitor<CodeFragment> {
         return ret;
     }
 
-    private ArgListCodeFragment convertParamList(ArgListCodeFragment paramList, Function f) {
+    private ArgListCodeFragment convertParamList(ArgListCodeFragment paramList, Function f, CodePosition p) {
         ArgListCodeFragment code = new ArgListCodeFragment();
         code.appendCodeFragment(paramList);
         for (int i = 0; i<paramList.getArgs().size();i++) {
             Variable v = paramList.getArgs().get(i);
             Type t = f.getParams().get(i).getType();
-            code.appendCodeFragment(variableTypeConvert(v, t));
+            code.appendCodeFragment(variableTypeConvert(v, t, p));
             code.addArg(new Variable(code.getInfo(),code.getRegister(), code.getType()));
         }
         return code;
     }
 
     @Override public CodeFragment visitFunc_call(MagicParser.Func_callContext ctx) {
+        CodePosition p = new CodePosition(ctx);
         CodeFragment code = new CodeFragment();
         String id = ctx.ID().getText();
-        Function f = getFunc(id, new CodePosition(ctx));
+        Function f = getFunc(id, p);
 
-        ArgListCodeFragment params = convertParamList((ArgListCodeFragment)visit(ctx.param_list()), f);
+        ArgListCodeFragment params = convertParamList((ArgListCodeFragment)visit(ctx.param_list()), f, p);
         String register = generateNewRegister();
 
         ST template = new ST(
