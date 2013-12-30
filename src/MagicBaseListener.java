@@ -42,19 +42,6 @@ public class MagicBaseListener implements MagicListener {
 	 * <p/>
 	 * The default implementation does nothing.
 	 */
-	@Override public void enterVarID(@NotNull MagicParser.VarIDContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 * <p/>
-	 * The default implementation does nothing.
-	 */
-	@Override public void exitVarID(@NotNull MagicParser.VarIDContext ctx) { }
-
-	/**
-	 * {@inheritDoc}
-	 * <p/>
-	 * The default implementation does nothing.
-	 */
 	@Override public void enterAttr(@NotNull MagicParser.AttrContext ctx) { }
 	/**
 	 * {@inheritDoc}
@@ -62,6 +49,19 @@ public class MagicBaseListener implements MagicListener {
 	 * The default implementation does nothing.
 	 */
 	@Override public void exitAttr(@NotNull MagicParser.AttrContext ctx) { }
+
+	/**
+	 * {@inheritDoc}
+	 * <p/>
+	 * The default implementation does nothing.
+	 */
+	@Override public void enterVarID(@NotNull MagicParser.VarIDContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 * <p/>
+	 * The default implementation does nothing.
+	 */
+	@Override public void exitVarID(@NotNull MagicParser.VarIDContext ctx) { }
 
 	/**
 	 * {@inheritDoc}
@@ -185,19 +185,6 @@ public class MagicBaseListener implements MagicListener {
 	 * <p/>
 	 * The default implementation does nothing.
 	 */
-	@Override public void enterTypeBasic(@NotNull MagicParser.TypeBasicContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 * <p/>
-	 * The default implementation does nothing.
-	 */
-	@Override public void exitTypeBasic(@NotNull MagicParser.TypeBasicContext ctx) { }
-
-	/**
-	 * {@inheritDoc}
-	 * <p/>
-	 * The default implementation does nothing.
-	 */
 	@Override public void enterFunc(@NotNull MagicParser.FuncContext ctx) { }
 	/**
 	 * {@inheritDoc}
@@ -211,6 +198,19 @@ public class MagicBaseListener implements MagicListener {
 	 * <p/>
 	 * The default implementation does nothing.
 	 */
+	@Override public void enterTypeBasic(@NotNull MagicParser.TypeBasicContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 * <p/>
+	 * The default implementation does nothing.
+	 */
+	@Override public void exitTypeBasic(@NotNull MagicParser.TypeBasicContext ctx) { }
+
+	/**
+	 * {@inheritDoc}
+	 * <p/>
+	 * The default implementation does nothing.
+	 */
 	@Override public void enterFor_statement(@NotNull MagicParser.For_statementContext ctx) { }
 	/**
 	 * {@inheritDoc}
@@ -218,6 +218,19 @@ public class MagicBaseListener implements MagicListener {
 	 * The default implementation does nothing.
 	 */
 	@Override public void exitFor_statement(@NotNull MagicParser.For_statementContext ctx) { }
+
+	/**
+	 * {@inheritDoc}
+	 * <p/>
+	 * The default implementation does nothing.
+	 */
+	@Override public void enterTypelist(@NotNull MagicParser.TypelistContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 * <p/>
+	 * The default implementation does nothing.
+	 */
+	@Override public void exitTypelist(@NotNull MagicParser.TypelistContext ctx) { }
 
 	/**
 	 * {@inheritDoc}
@@ -517,6 +530,19 @@ public class MagicBaseListener implements MagicListener {
 	 * The default implementation does nothing.
 	 */
 	@Override public void exitWhile_statement(@NotNull MagicParser.While_statementContext ctx) { }
+
+	/**
+	 * {@inheritDoc}
+	 * <p/>
+	 * The default implementation does nothing.
+	 */
+	@Override public void enterExtern_func_def(@NotNull MagicParser.Extern_func_defContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 * <p/>
+	 * The default implementation does nothing.
+	 */
+	@Override public void exitExtern_func_def(@NotNull MagicParser.Extern_func_defContext ctx) { }
 
 	/**
 	 * {@inheritDoc}

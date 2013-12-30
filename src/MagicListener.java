@@ -30,17 +30,6 @@ public interface MagicListener extends ParseTreeListener {
 	void exitValBool(@NotNull MagicParser.ValBoolContext ctx);
 
 	/**
-	 * Enter a parse tree produced by {@link MagicParser#VarID}.
-	 * @param ctx the parse tree
-	 */
-	void enterVarID(@NotNull MagicParser.VarIDContext ctx);
-	/**
-	 * Exit a parse tree produced by {@link MagicParser#VarID}.
-	 * @param ctx the parse tree
-	 */
-	void exitVarID(@NotNull MagicParser.VarIDContext ctx);
-
-	/**
 	 * Enter a parse tree produced by {@link MagicParser#Attr}.
 	 * @param ctx the parse tree
 	 */
@@ -50,6 +39,17 @@ public interface MagicListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitAttr(@NotNull MagicParser.AttrContext ctx);
+
+	/**
+	 * Enter a parse tree produced by {@link MagicParser#VarID}.
+	 * @param ctx the parse tree
+	 */
+	void enterVarID(@NotNull MagicParser.VarIDContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link MagicParser#VarID}.
+	 * @param ctx the parse tree
+	 */
+	void exitVarID(@NotNull MagicParser.VarIDContext ctx);
 
 	/**
 	 * Enter a parse tree produced by {@link MagicParser#ValFloat}.
@@ -151,17 +151,6 @@ public interface MagicListener extends ParseTreeListener {
 	void exitAdd(@NotNull MagicParser.AddContext ctx);
 
 	/**
-	 * Enter a parse tree produced by {@link MagicParser#typeBasic}.
-	 * @param ctx the parse tree
-	 */
-	void enterTypeBasic(@NotNull MagicParser.TypeBasicContext ctx);
-	/**
-	 * Exit a parse tree produced by {@link MagicParser#typeBasic}.
-	 * @param ctx the parse tree
-	 */
-	void exitTypeBasic(@NotNull MagicParser.TypeBasicContext ctx);
-
-	/**
 	 * Enter a parse tree produced by {@link MagicParser#Func}.
 	 * @param ctx the parse tree
 	 */
@@ -173,6 +162,17 @@ public interface MagicListener extends ParseTreeListener {
 	void exitFunc(@NotNull MagicParser.FuncContext ctx);
 
 	/**
+	 * Enter a parse tree produced by {@link MagicParser#typeBasic}.
+	 * @param ctx the parse tree
+	 */
+	void enterTypeBasic(@NotNull MagicParser.TypeBasicContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link MagicParser#typeBasic}.
+	 * @param ctx the parse tree
+	 */
+	void exitTypeBasic(@NotNull MagicParser.TypeBasicContext ctx);
+
+	/**
 	 * Enter a parse tree produced by {@link MagicParser#for_statement}.
 	 * @param ctx the parse tree
 	 */
@@ -182,6 +182,17 @@ public interface MagicListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitFor_statement(@NotNull MagicParser.For_statementContext ctx);
+
+	/**
+	 * Enter a parse tree produced by {@link MagicParser#typelist}.
+	 * @param ctx the parse tree
+	 */
+	void enterTypelist(@NotNull MagicParser.TypelistContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link MagicParser#typelist}.
+	 * @param ctx the parse tree
+	 */
+	void exitTypelist(@NotNull MagicParser.TypelistContext ctx);
 
 	/**
 	 * Enter a parse tree produced by {@link MagicParser#decrement}.
@@ -435,6 +446,17 @@ public interface MagicListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitWhile_statement(@NotNull MagicParser.While_statementContext ctx);
+
+	/**
+	 * Enter a parse tree produced by {@link MagicParser#extern_func_def}.
+	 * @param ctx the parse tree
+	 */
+	void enterExtern_func_def(@NotNull MagicParser.Extern_func_defContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link MagicParser#extern_func_def}.
+	 * @param ctx the parse tree
+	 */
+	void exitExtern_func_def(@NotNull MagicParser.Extern_func_defContext ctx);
 
 	/**
 	 * Enter a parse tree produced by {@link MagicParser#Compare}.

@@ -1,6 +1,7 @@
 #include <vector>
 #include <iostream>
 #include <cstdio>
+#include <string>
 
 using namespace std;
 
@@ -223,6 +224,40 @@ void* multiplyListBool(void *list1, LL val) {
 
 LL sizeListBool(void* list1) {
     return ((vector<bool> *)list1)->size();
+}
+
+//--Char------------------
+
+LL printChar(char a) {
+    return print(a);
+}
+
+void* createListChar(LL size) {
+    return (void*) createList<char>(size);
+}
+
+void* createListFromRangeChar(void* range) {
+    return (void*) createListFromRange<char>((Range<char>*) range);
+}
+
+void setListItemChar(void* list, LL index, char item) {
+    setListItem<char>((vector<char>*) list, index, item);
+}
+
+char getListItemChar(void* list, LL index) {
+    getListItem<char>((vector<char>*) list, index);
+}
+
+void* mergeListsChar(void *list1, void *list2) {
+       return (void*) mergeLists<char>((vector<char> *)list1, (vector<char> *)list2);
+}
+
+void* multiplyListChar(void *list1, LL val) {
+    return (void*) multiplyList<char>((vector<char> *)list1, val);
+}
+
+LL sizeListChar(void* list1) {
+    return ((vector<char> *)list1)->size();
 }
 
 

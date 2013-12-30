@@ -9,7 +9,7 @@ tokens {
     int nesting = 0;
 }
 
-init: statement*;
+init: (extern_func_def NL)* statement*;
 
 block
  : INDENT statement+ DEDENT
@@ -82,7 +82,11 @@ param_list: (expression (',' expression)*)?;
 
 func_def: type ID LPAR arglist RPAR NL block;
 
+extern_func_def: 'extern' type ID LPAR typelist RPAR;
+
 arglist: (type ID (',' type ID)*)?;
+
+typelist: (type (',' type)*)?;
 
 /*func_call: ((LPAR expression RPAR) | var) LPAR param_list RPAR;*/
 func_call: ID LPAR param_list RPAR;

@@ -25,18 +25,18 @@ public interface MagicVisitor<T> extends ParseTreeVisitor<T> {
 	T visitValBool(@NotNull MagicParser.ValBoolContext ctx);
 
 	/**
-	 * Visit a parse tree produced by {@link MagicParser#VarID}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitVarID(@NotNull MagicParser.VarIDContext ctx);
-
-	/**
 	 * Visit a parse tree produced by {@link MagicParser#Attr}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitAttr(@NotNull MagicParser.AttrContext ctx);
+
+	/**
+	 * Visit a parse tree produced by {@link MagicParser#VarID}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitVarID(@NotNull MagicParser.VarIDContext ctx);
 
 	/**
 	 * Visit a parse tree produced by {@link MagicParser#ValFloat}.
@@ -102,13 +102,6 @@ public interface MagicVisitor<T> extends ParseTreeVisitor<T> {
 	T visitAdd(@NotNull MagicParser.AddContext ctx);
 
 	/**
-	 * Visit a parse tree produced by {@link MagicParser#typeBasic}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitTypeBasic(@NotNull MagicParser.TypeBasicContext ctx);
-
-	/**
 	 * Visit a parse tree produced by {@link MagicParser#Func}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
@@ -116,11 +109,25 @@ public interface MagicVisitor<T> extends ParseTreeVisitor<T> {
 	T visitFunc(@NotNull MagicParser.FuncContext ctx);
 
 	/**
+	 * Visit a parse tree produced by {@link MagicParser#typeBasic}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitTypeBasic(@NotNull MagicParser.TypeBasicContext ctx);
+
+	/**
 	 * Visit a parse tree produced by {@link MagicParser#for_statement}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitFor_statement(@NotNull MagicParser.For_statementContext ctx);
+
+	/**
+	 * Visit a parse tree produced by {@link MagicParser#typelist}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitTypelist(@NotNull MagicParser.TypelistContext ctx);
 
 	/**
 	 * Visit a parse tree produced by {@link MagicParser#decrement}.
@@ -282,6 +289,13 @@ public interface MagicVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitWhile_statement(@NotNull MagicParser.While_statementContext ctx);
+
+	/**
+	 * Visit a parse tree produced by {@link MagicParser#extern_func_def}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitExtern_func_def(@NotNull MagicParser.Extern_func_defContext ctx);
 
 	/**
 	 * Visit a parse tree produced by {@link MagicParser#Compare}.

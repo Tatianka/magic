@@ -1,7 +1,7 @@
 default: bin/Compiler.class
 
-src/MagicBaseVisitor: grammar/Magic.gr4
-	java -jar lib/antlr-4.1-complete.jar grammar/Magic.g4 -o src/ -visitor
+src/MagicBaseVisitor.java: grammar/Magic.g4
+	(cd grammar && java -jar ../lib/antlr-4.1-complete.jar Magic.g4 -o ../src/ -visitor)
 
 lib/libmagic.o: lib/libmagic.cpp
 	g++ -fPIC lib/libmagic.cpp -c -o lib/libmagic.o
@@ -11,6 +11,6 @@ lib/libmagic.so: lib/libmagic.cpp
 
 lib: lib/libmagic.o lib/libmagic.so
 
-bin/Compiler.class: src/*.java
+bin/Compiler.class: src/MagicBaseVisitor.java src/*.java lib
 	mkdir -p bin
-	javac src/*.java -d bin/ -Xlint:unchecked lib
+	javac src/*.java -d bin/ -Xlint:unchecked

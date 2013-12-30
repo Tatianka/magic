@@ -1,6 +1,12 @@
+extern int iexp(int, int)
+extern float sqrt(float)
 a = 0
 a += 10
 b = []
 b += 10
 printInt(a)
 printInt(b[0])
+c = 'a'
+printChar(c)
+printInt(iexp(10, 3))
+printFloat(sqrt(100))

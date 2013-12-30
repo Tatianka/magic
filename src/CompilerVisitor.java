@@ -54,6 +54,12 @@ public class CompilerVisitor extends MagicBaseVisitor<CodeFragment> {
         f = new Function("printFloat", "@printFloat", BasicType.INT, p);
         libFunctions.add(f);
         declFunc("printFloat", f, cp);
+
+        p = new ArrayList<Variable>();
+        p.add(new Variable("a", "", BasicType.CHAR));
+        f = new Function("printChar", "@printChar", BasicType.INT, p);
+        libFunctions.add(f);
+        declFunc("printChar", f, cp);
     }
 
     private void addTable() {
@@ -299,6 +305,9 @@ public class CompilerVisitor extends MagicBaseVisitor<CodeFragment> {
         if (t.equals(BasicType.FLOAT)) {
             listType = "Float";
         }
+        if (t.equals(BasicType.CHAR)) {
+            listType = "Char";
+        }
         if (t.equals(BasicType.BOOL)) {
             listType = "Bool";
         }
@@ -409,15 +418,23 @@ public class CompilerVisitor extends MagicBaseVisitor<CodeFragment> {
 
     @Override public CodeFragment visitInit(MagicParser.InitContext ctx) {
         String base_functions =
-            getListFunctions(BasicType.INT) +
+            getRangeFunctions(BasicType.CHAR) +
             getRangeFunctions(BasicType.INT) +
-            getListFunctions(BasicType.FLOAT) +
+            getRangeFunctions(BasicType.FLOAT) +
             getListFunctions(BasicType.BOOL) +
+            getListFunctions(BasicType.CHAR) +
+            getListFunctions(BasicType.INT) +
+            getListFunctions(BasicType.FLOAT) +
             getListFunctions(new ListType(BasicType.NOTYPE));
 
-        CodeFragment lib_functions = generateLibFunctions();
-
         CodeFragment body = new CodeFragment();
+
+        for(MagicParser.Extern_func_defContext s: ctx.extern_func_def()) {
+            CodeFragment fdef = visit(s);
+            body.appendCodeFragment(fdef);
+        }
+
+        CodeFragment lib_functions = generateLibFunctions();
 
         for(MagicParser.StatementContext s: ctx.statement()) {
             CodeFragment statement = visit(s);
@@ -437,6 +454,7 @@ public class CompilerVisitor extends MagicBaseVisitor<CodeFragment> {
 
         template.add("body_code", body);
         template.add("functions", this.generateFunctions());
+
         template.add("lib_functions", lib_functions);
         template.add("base_functions", base_functions);
 
@@ -495,10 +513,9 @@ public class CompilerVisitor extends MagicBaseVisitor<CodeFragment> {
         String register = generateNewRegister();
         code.setType(t);
         code.setRegister(register);
-        if (t.equals(BasicType.INT) || t.equals(BasicType.BOOL)) {
+        if (t.isInteger()) {
             code.addCode(String.format("%s = add %s 0, %s\n", register, code.getType().getCode(), value));
-        }
-        if (t.equals(BasicType.FLOAT)) {
+        } else if (t.equals(BasicType.FLOAT)) {
             code.addCode(String.format("%s = fadd %s 0.0, %s\n", register, code.getType().getCode(), value));
         }
         return code;
@@ -515,6 +532,11 @@ public class CompilerVisitor extends MagicBaseVisitor<CodeFragment> {
         }
 
         return generateConstant(BasicType.BOOL, value);
+    }
+
+    @Override public CodeFragment visitValChar(MagicParser.ValCharContext ctx) {
+        String value = Integer.toString((int)ctx.CHAR().getText().charAt(1));
+        return generateConstant(BasicType.CHAR, value);
     }
 
     @Override public CodeFragment visitValFloat(MagicParser.ValFloatContext ctx) {
@@ -678,6 +700,25 @@ public class CompilerVisitor extends MagicBaseVisitor<CodeFragment> {
         return code;
     }
 
+    @Override public CodeFragment visitExtern_func_def(MagicParser.Extern_func_defContext ctx) {
+        CodePosition cp = new CodePosition(ctx);
+        CodeFragment code = new CodeFragment();
+
+        Type rtype = visit(ctx.type()).getType();
+        String id = ctx.ID().getText();
+        String name = "@" + id;
+
+        ArgListCodeFragment arglist = (ArgListCodeFragment) visit(ctx.typelist());
+        Function f = new Function(id, name, rtype, arglist.getArgs());
+        declFunc(id, f, new CodePosition(ctx));
+        libFunctions.add(f);
+
+        code.setType(arglist.getType());
+        code.setRegister(arglist.getRegister());
+
+        return code;
+    }
+
     @Override public CodeFragment visitRet(MagicParser.RetContext ctx) {
         CodeFragment code;
         try {
@@ -709,6 +750,16 @@ public class CompilerVisitor extends MagicBaseVisitor<CodeFragment> {
 
             code.appendCodeFragment(assign);
             code.addArg(new Variable(id, argRegister, t));
+        }
+
+        return (CodeFragment)code;
+    }
+
+    @Override public CodeFragment visitTypelist(MagicParser.TypelistContext ctx) {
+        ArgListCodeFragment code = new ArgListCodeFragment();
+        for (int i = 0; i< ctx.type().size(); i++) {
+            Type t = visit(ctx.type(i)).getType();
+            code.addArg(new Variable("", "", t));
         }
 
         return (CodeFragment)code;
@@ -1205,18 +1256,31 @@ public class CompilerVisitor extends MagicBaseVisitor<CodeFragment> {
         return ret;
     }
 
+    private ArgListCodeFragment convertParamList(ArgListCodeFragment paramList, Function f) {
+        ArgListCodeFragment code = new ArgListCodeFragment();
+        code.appendCodeFragment(paramList);
+        for (int i = 0; i<paramList.getArgs().size();i++) {
+            Variable v = paramList.getArgs().get(i);
+            Type t = f.getParams().get(i).getType();
+            code.appendCodeFragment(variableTypeConvert(v, t));
+            code.addArg(new Variable(code.getInfo(),code.getRegister(), code.getType()));
+        }
+        return code;
+    }
+
     @Override public CodeFragment visitFunc_call(MagicParser.Func_callContext ctx) {
         CodeFragment code = new CodeFragment();
         String id = ctx.ID().getText();
         Function f = getFunc(id, new CodePosition(ctx));
 
-        ArgListCodeFragment params = (ArgListCodeFragment)visit(ctx.param_list());
+        ArgListCodeFragment params = convertParamList((ArgListCodeFragment)visit(ctx.param_list()), f);
         String register = generateNewRegister();
 
         ST template = new ST(
                 "<args_code>" +
                 "<reg> = call <type> <name>(<args>)\n"
         );
+
         template.add("args_code", params);
         template.add("type", f.getReturnType().getCode());
         template.add("name", f.getName());

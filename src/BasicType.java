@@ -3,6 +3,7 @@ import java.util.HashMap;
 public enum BasicType implements Type {
     // VOID("void" ,"void", 0),
     BOOL("bool", "i1", "0", true, true, false),
+    CHAR("char", "i8", "0", true, true, false),
     INT("int", "i64", "0", true, true, false),
     FLOAT("float", "double", "0.0", false, true, false),
     NOTYPE("NOTYPE", "", "", false, false, false);
