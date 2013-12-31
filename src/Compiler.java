@@ -14,7 +14,12 @@ public class Compiler {
     	ParseTree tree = parser.init(); // begin parsing at init rule
 
         CompilerVisitor eval = new CompilerVisitor();
-        CodeFragment code = eval.visit(tree);
-        System.out.print(code.toString());
+        try {
+            CodeFragment code = eval.visit(tree);
+            System.out.print(code.toString());
+        } catch (CodeException e) {
+            System.err.println(e.toString());
+            System.exit(-1);
+        }
     }
 }

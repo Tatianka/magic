@@ -2443,9 +2443,11 @@ public class MagicParser extends Parser {
 		}
 	}
 	public static class UnaryMinusContext extends ExpressionContext {
+		public Token op;
 		public ExpressionContext expression() {
 			return getRuleContext(ExpressionContext.class,0);
 		}
+		public TerminalNode SUB() { return getToken(MagicParser.SUB, 0); }
 		public UnaryMinusContext(ExpressionContext ctx) { copyFrom(ctx); }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
@@ -2505,6 +2507,7 @@ public class MagicParser extends Parser {
 		}
 	}
 	public static class BoolNotContext extends ExpressionContext {
+		public Token op;
 		public TerminalNode NOT() { return getToken(MagicParser.NOT, 0); }
 		public ExpressionContext expression() {
 			return getRuleContext(ExpressionContext.class,0);
@@ -2721,7 +2724,7 @@ public class MagicParser extends Parser {
 				_localctx = new UnaryMinusContext(_localctx);
 				_ctx = _localctx;
 				_prevctx = _localctx;
-				setState(294); match(SUB);
+				setState(294); ((UnaryMinusContext)_localctx).op = match(SUB);
 				setState(295); expression(10);
 				}
 				break;
@@ -2731,7 +2734,7 @@ public class MagicParser extends Parser {
 				_localctx = new BoolNotContext(_localctx);
 				_ctx = _localctx;
 				_prevctx = _localctx;
-				setState(296); match(NOT);
+				setState(296); ((BoolNotContext)_localctx).op = match(NOT);
 				setState(297); expression(4);
 				}
 				break;

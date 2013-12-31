@@ -157,7 +157,7 @@ public class CompilerVisitor extends MagicBaseVisitor<CodeFragment> {
             return true;
         }
 
-        if ((t1 == BasicType.FLOAT || t1 == BasicType.INT || t1 == BasicType.BOOL) && (t2 == BasicType.FLOAT || t2 == BasicType.INT || t2 == BasicType.BOOL)) {
+        if (t1.isNumeric() && t2.isNumeric()) {
             return true;
         }
 
@@ -190,6 +190,9 @@ public class CompilerVisitor extends MagicBaseVisitor<CodeFragment> {
             return BasicType.INT;
         }
 
+        if (t1 == BasicType.CHAR || t2 == BasicType.CHAR) {
+            return BasicType.CHAR;
+        }
 
         return t1;
     }
@@ -247,7 +250,7 @@ public class CompilerVisitor extends MagicBaseVisitor<CodeFragment> {
         } else {
             if (v.getType().isInteger() && t.isInteger()) {
                 if (Integer.parseInt(v.getType().getCode().substring(1)) <= Integer.parseInt(t.getCode().substring(1))) {
-                    instruction = "sext";
+                    instruction = "zext";
                 } else {
                     instruction = "trunc";
                 }
@@ -1019,9 +1022,7 @@ public class CompilerVisitor extends MagicBaseVisitor<CodeFragment> {
                     "<ret> = call <type> @mergeLists%s(<type> <left_val>, <type> <right_val>)\n",
                     getFunctionSuffix(((ListType) type).getSubtype())
                 );
-            }
-
-            if (operator == MagicParser.MUL) {
+            } else  if (operator == MagicParser.MUL) {
                 CodeFragment lst;
                 CodeFragment val;
                 if (left.getType() instanceof ListType) {
@@ -1049,7 +1050,8 @@ public class CompilerVisitor extends MagicBaseVisitor<CodeFragment> {
                 } else {
                     throw new TypeMismatchException(p, BasicType.INT, val.getType());
                 }
-
+            } else {
+                throw new InvalidOperatorException(p, left.getType(), right.getType());
             }
         } else {
             if (!left.getType().equals(right.getType())) {
@@ -1078,21 +1080,19 @@ public class CompilerVisitor extends MagicBaseVisitor<CodeFragment> {
                 type = BasicType.BOOL;
 
             } else {
-                if (type == BasicType.BOOL) {
-                    Variable v = new Variable(left.getInfo(), left.getRegister(), left.getType());
-                    left.appendCodeFragment(variableTypeConvert(v, BasicType.INT, p));
+                // if (type == BasicType.BOOL) {
+                //     Variable v = new Variable(left.getInfo(), left.getRegister(), left.getType());
+                //     left.appendCodeFragment(variableTypeConvert(v, BasicType.INT, p));
 
-                    Variable v2 = new Variable(right.getInfo(), right.getRegister(), right.getType());
-                    right.appendCodeFragment(variableTypeConvert(v2, BasicType.INT, p));
+                //     Variable v2 = new Variable(right.getInfo(), right.getRegister(), right.getType());
+                //     right.appendCodeFragment(variableTypeConvert(v2, BasicType.INT, p));
 
-                    type = BasicType.INT;
-                }
+                //     type = BasicType.INT;
+                // }
 
-                if (type == BasicType.INT) {
+                if (type.isInteger()) {
                     instruction = m.get(operator).getFirst();
-                }
-
-                if (type == BasicType.FLOAT) {
+                } else {
                     instruction = m.get(operator).getSecond();
                 }
             }
@@ -1122,6 +1122,70 @@ public class CompilerVisitor extends MagicBaseVisitor<CodeFragment> {
         CodeFragment ret = new CodeFragment();
         ret.setRegister(ret_register);
         ret.setType(retType);
+        ret.addCode(template.render());
+        return ret;
+    }
+
+    public CodeFragment generateUnaryOperatorCodeFragment(CodeFragment expr, Integer operator, CodePosition p) {
+        String code_stub = "";
+        Type type = expr.getType();
+
+        HashMap<Integer, Pair<String, String>> m = new HashMap<Integer, Pair<String, String>>();
+        HashSet<Integer> boolOperators = new HashSet<Integer>();
+
+        m.put(MagicParser.SUB, new Pair<String, String>("sub", "fsub"));
+
+        m.put(MagicParser.NOT, new Pair<String, String>("sub" , "fsub" ));
+        boolOperators.add(MagicParser.NOT);
+
+        String instruction = "";
+        if (expr.getType().isNumeric()) {
+            if (boolOperators.contains(operator)) {
+                instruction = m.get(operator).getFirst();
+                Variable v = new Variable(expr.getInfo(), expr.getRegister(), expr.getType());
+                expr.appendCodeFragment(variableToBool(v));
+
+                type = BasicType.BOOL;
+
+            } else {
+                // if (type == BasicType.BOOL) {
+                //     Variable v = new Variable(left.getInfo(), left.getRegister(), left.getType());
+                //     left.appendCodeFragment(variableTypeConvert(v, BasicType.INT, p));
+
+                //     type = BasicType.INT;
+                // }
+
+                if (type.isInteger()) {
+                    instruction = m.get(operator).getFirst();
+                } else {
+                    instruction = m.get(operator).getSecond();
+                }
+            }
+        }
+
+        switch (operator) {
+            case MagicParser.SUB:
+                code_stub = "<ret> = <instruction> <type> 0, <expr_val>\n";
+                break;
+            case MagicParser.NOT:
+                code_stub = "<ret> = <instruction> <type> 1, <expr_val>\n";
+                break;
+        }
+
+        ST template = new ST(
+            "<expr_code>" +
+            code_stub
+        );
+        template.add("expr_code", expr);
+        template.add("instruction", instruction);
+        template.add("type", type.getCode());
+        template.add("expr_val", expr.getRegister());
+        String ret_register = this.generateNewRegister();
+        template.add("ret", ret_register);
+
+        CodeFragment ret = new CodeFragment();
+        ret.setRegister(ret_register);
+        ret.setType(type);
         ret.addCode(template.render());
         return ret;
     }
@@ -1166,6 +1230,22 @@ public class CompilerVisitor extends MagicBaseVisitor<CodeFragment> {
         return generateBinaryOperatorCodeFragment(
             visit(ctx.expression(0)),
             visit(ctx.expression(1)),
+            ctx.op.getType(),
+            new CodePosition(ctx)
+        );
+    }
+
+    @Override public CodeFragment visitUnaryMinus(MagicParser.UnaryMinusContext ctx) {
+        return generateUnaryOperatorCodeFragment(
+            visit(ctx.expression()),
+            ctx.op.getType(),
+            new CodePosition(ctx)
+        );
+    }
+
+    @Override public CodeFragment visitBoolNot(MagicParser.BoolNotContext ctx) {
+        return generateUnaryOperatorCodeFragment(
+            visit(ctx.expression()),
             ctx.op.getType(),
             new CodePosition(ctx)
         );

@@ -1,20 +1,20 @@
-extern int iexp(int, int)
-extern float sqrt(float)
-a = 0
-a += 10
-b = []
-b += 10
-printInt(a)
-printInt(b[0])
-c = 'a'
-printChar(c)
-printInt(iexp(10, 3))
-printFloat(sqrt(100))
-d = "abcdefgh"
-printString(d)
+a = 'a'
+a += 3
 
-g = []
-int x = 'a'
-g += x
-for i in g
-    printChar(i)
+b = 'a' + 4
+b += true
+
+c = -a
+
+d = (a == 'd')
+
+e = !d
+
+f = -b
+
+printInt(a)
+printInt(b)
+printInt(c)
+printInt(d)
+printInt(e)
+printInt(f)

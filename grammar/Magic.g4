@@ -119,13 +119,13 @@ expression
     | attribute_ref # Attr
     | EXP<assoc=right> expression # Exp
     | '~' expression # BitNot
-    | '-' expression # UnaryMinus
+    | op=SUB expression # UnaryMinus
     | expression op=(MUL | DIV | IDIV | REM) expression # Mul
     | expression op=(ADD | SUB) expression # Add
     | expression '&' # BitAnd
     | expression '|' # BitOr
     | expression op=(EQ | NE | LE | GE | GT | LT) expression # Compare
-    | NOT expression # BoolNot
+    | op=NOT expression # BoolNot
     | expression op=AND expression # BoolAnd
     | expression op=OR expression # BoolOr
     | val # Value
